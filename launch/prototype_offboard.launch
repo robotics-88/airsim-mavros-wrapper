@@ -1,0 +1,7 @@
+<launch>
+    <include file="$(find zed_rtabmap_example)/launch/zed_rtabmap.launch">
+        <arg name="base_frame" value="zed2i_base"/>
+    </include>
+    
+    <include file="$(find vegetation)/launch/vegetation.launch"/>
+</launch>
