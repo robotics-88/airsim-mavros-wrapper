@@ -10,5 +10,5 @@ Launch MAVROS on the drone. Note that the ROS Master has already been set to the
 
 ## On PC
 
-Launch all offboard perception with:
-`roslaunch vehicle_launch prototype_offboard.launch`
+Launch all offboard perception with (remove last arg once Sequoia camera integrated):
+`roslaunch vehicle_launch prototype_offboard.launch do_multispectral_viz:=false`

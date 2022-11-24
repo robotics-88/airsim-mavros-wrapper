@@ -1,7 +1,59 @@
 <launch>
-    <include file="$(find zed_rtabmap_example)/launch/zed_rtabmap.launch">
-        <arg name="base_frame" value="zed2i_base"/>
+
+    <!-- ZED Position respect to base frame (i.e. "base_link) -->
+    <arg name="cam_pos_x"             default="0.127" />
+    <arg name="cam_pos_y"             default="0.0" />
+    <arg name="cam_pos_z"             default="-0.0635" />
+
+    <!-- ZED Orientation respect to base frame (i.e. "base_link) -->
+    <arg name="cam_roll"              default="0.0" />
+    <arg name="cam_pitch"             default="0.0" />
+    <arg name="cam_yaw"               default="0.0" />
+
+    <include file="$(find vehicle_launch)/launch/prototype_rtabmap.launch">
+        <arg name="cam_pos_x"             value="$(arg cam_pos_x)" />
+        <arg name="cam_pos_y"             value="$(arg cam_pos_y)" />
+        <arg name="cam_pos_z"             value="$(arg cam_pos_z)" />
     </include>
-    
-    <include file="$(find vegetation)/launch/vegetation.launch"/>
+        
+    <arg name="green_image_topic" default="green_image"/>
+    <arg name="nir_image_topic" default="nir_image"/>
+    <arg name="red_image_topic" default="red_image"/>
+    <arg name="rededge_image_topic" default="rededge_image"/>
+
+    <arg name="zed_right_rgb_topic" default="/zed2i/zed_node/right/image_rect_color"/>
+    <arg name="rgb_resolution" default=".75"/>
+
+    <arg name="do_object_det" default="false"/>
+
+    <arg name="do_multispectral_viz" default="true"/>
+    <arg name="do_rgb_viz" default="true"/>
+
+    <arg name="map_frame_id" default="map"/>
+
+    <arg name="use_octomap" default="false"/>
+    <arg name="octomap_topic" default="/zed2i/octomap_binary"/>
+
+    <node pkg="vegetation" type="vegetation" respawn="false" name="vegetation" output="screen">
+        <param name="green_image_topic" value="$(arg green_image_topic)"/>
+        <param name="nir_image_topic" value="$(arg nir_image_topic)"/>
+        <param name="red_image_topic" value="$(arg red_image_topic)"/>
+        <param name="rededge_image_topic" value="$(arg rededge_image_topic)"/>
+        <param name="zed_rgb_image_topic" value="$(arg zed_right_rgb_topic)"/>
+        <param name="rgb_resolution" value="$(arg rgb_resolution)"/>
+        <param name="do_multispectral_viz" value="$(arg do_multispectral_viz)"/>
+        <param name="do_rgb_viz" value="$(arg do_rgb_viz)"/>
+        <param name="map_frame" value="$(arg map_frame_id)"/>
+        <param name="use_octomap" value="$(arg use_octomap)"/>
+        <param name="octomap_topic" value="$(arg octomap_topic)"/>
+    </node>
+
+    <group if="$(arg do_multispectral_viz)">
+        <node type="rviz" name="multispec_rviz" pkg="rviz" args="-d $(find vegetation)/config/ndwi.rviz" />
+    </group>
+
+    <group if="$(arg do_rgb_viz)">
+        <node type="rviz" name="zed_rviz" pkg="rviz" args="-d $(find vegetation)/config/zedrgb.rviz" />
+    </group>
+
 </launch>
