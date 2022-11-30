@@ -1,4 +1,4 @@
-# vehicle
+# prototype vehicle
 
 ## On Drone
 
@@ -16,3 +16,11 @@ In a second terminal on the drone, run:
 
 Launch all offboard perception with (remove last arg once Sequoia camera integrated):
 `roslaunch vehicle_launch prototype_offboard.launch do_multispectral_viz:=false`
+
+
+# airsim vehicle
+
+Start Unreal, then ArduPilot, then press Play in Unreal. (TODO: Add detailed instructions. For now, ref the google doc on airsim.)
+
+Next, start MAVROS:
+`roslaunch vehicle_launch airsim_mavros.launch`
