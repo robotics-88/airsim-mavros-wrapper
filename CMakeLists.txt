@@ -37,7 +37,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
    INCLUDE_DIRS include
-#  LIBRARIES vehicle_launch
+#  LIBRARIES airsim_ros
    CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
 )
@@ -59,7 +59,7 @@ include_directories(
 )
 
 ## Declare a C++ executable
-add_executable(vehicle_launch
+add_executable(airsim_node
   src/airsim_ros_node.cpp
 )
 
@@ -69,11 +69,11 @@ add_library(airsim_ros
 
 add_dependencies(airsim_ros ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(vehicle_launch airsim_ros ${catkin_LIBRARIES} ${OpenCV_LIBS} AirLib)
+target_link_libraries(airsim_node airsim_ros ${catkin_LIBRARIES} ${OpenCV_LIBS} AirLib)
 
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(airsim_node
   ${catkin_LIBRARIES}
 )
 
@@ -83,7 +83,7 @@ target_link_libraries(${PROJECT_NAME}
 
 install(TARGETS
     #list of nodes
-    vehicle_launch
+    airsim_node
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
