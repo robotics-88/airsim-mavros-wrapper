@@ -1,0 +1,4 @@
+<launch>
+    <include file="$(find vehicle_launch)/launch/airsim_mavros.launch"/>
+    <!-- Fill in with airsim wrapper node and rtabmap -->
+</launch>
