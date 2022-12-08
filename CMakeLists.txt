@@ -14,6 +14,7 @@ message(STATUS "found RPC_LIB_INCLUDES=${RPC_LIB_INCLUDES}")
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
+  image_transport
   roscpp
   roslib
   std_msgs

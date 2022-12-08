@@ -8,6 +8,7 @@ Author: Erin Linebarger <erin@robotics88.com>
 
 #include <ros/ros.h>
 
+#include <image_transport/image_transport.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/NavSatFix.h>
@@ -20,6 +21,8 @@ Author: Erin Linebarger <erin@robotics88.com>
 #include "rpc/rpc_error.h"
 #include "vehicles/multirotor/api/MultirotorRpcLibClient.hpp"
 
+#include <airsim_ros_wrapper/math_common.h>
+
 namespace airsim_ros {
 /**
  * @class AirsimRosWrapper
@@ -27,6 +30,12 @@ namespace airsim_ros {
  */
 class AirsimRosWrapper {
     using AirSimSettings = msr::airlib::AirSimSettings;
+    using VehicleSetting = msr::airlib::AirSimSettings::VehicleSetting;
+    using CameraSetting = msr::airlib::AirSimSettings::CameraSetting;
+    using CaptureSetting = msr::airlib::AirSimSettings::CaptureSetting;
+    using ImageRequest = msr::airlib::ImageCaptureBase::ImageRequest;
+    using ImageResponse = msr::airlib::ImageCaptureBase::ImageResponse;
+    using ImageType = msr::airlib::ImageCaptureBase::ImageType;
 
     public:
         AirsimRosWrapper(ros::NodeHandle& node);
@@ -104,17 +113,29 @@ class AirsimRosWrapper {
         msr::airlib::MultirotorRpcLibClient airsim_client_lidar_;
 
         std::unordered_map<std::string, std::unique_ptr<VehicleROS>> vehicle_name_ptr_map_;
+        static const std::unordered_map<int, std::string> image_type_int_to_string_map_;
 
         /// ROS Timers.
         ros::Timer airsim_img_response_timer_;
         ros::Timer airsim_control_update_timer_;
         ros::Timer airsim_lidar_update_timer_;
 
+        typedef std::pair<std::vector<ImageRequest>, std::string> airsim_img_request_vehicle_name_pair;
+        std::vector<airsim_img_request_vehicle_name_pair> airsim_img_request_vehicle_name_pair_vec_;
+        std::vector<image_transport::Publisher> image_pub_vec_;
+        std::vector<ros::Publisher> cam_info_pub_vec_;
+        std::vector<sensor_msgs::CameraInfo> camera_info_msg_vec_;
+
         void createRosPubsFromSettingsJson();
+        void setNansToZerosInPose(VehicleSetting& vehicle_setting) const;
+        void setNansToZerosInPose(const VehicleSetting& vehicle_setting, CameraSetting& camera_setting) const;
 
         ros::Time airsimTimestampToRos(const msr::airlib::TTimePoint& stamp) const;
         ros::Time chronoTimestampToRos(const std::chrono::system_clock::time_point& stamp) const;
         sensor_msgs::NavSatFix getGpsSensorMsgFromAirsimGeopoint(const msr::airlib::GeoPoint& geo_point) const;
+        sensor_msgs::CameraInfo generateCamInfo(const std::string& camera_name,
+                                                const CameraSetting& camera_setting,
+                                                const CaptureSetting& capture_setting) const;
 
 };
 

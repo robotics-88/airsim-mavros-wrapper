@@ -1,5 +1,5 @@
 <launch>
-    <include file="$(find vehicle_launch)/launch/airsim_mavros.launch"/>
+    <!-- <include file="$(find vehicle_launch)/launch/airsim_mavros.launch"/> -->
     <!-- Fill in with airsim wrapper node and rtabmap -->
 
     <node pkg="vehicle_launch" type="airsim_node" respawn="false" name="airsim_ros_node" output="screen"/>

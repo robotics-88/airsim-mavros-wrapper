@@ -5,10 +5,20 @@ Author: Erin Linebarger <erin@robotics88.com>
 
 #include "airsim_ros_wrapper/airsim_ros_wrapper.h"
 
-#include <image_transport/image_transport.h>
 
 namespace airsim_ros
 {
+    const std::unordered_map<int, std::string> AirsimRosWrapper::image_type_int_to_string_map_ = {
+        { 0, "Scene" },
+        { 1, "DepthPlanar" },
+        { 2, "DepthPerspective" },
+        { 3, "DepthVis" },
+        { 4, "DisparityNormalized" },
+        { 5, "Segmentation" },
+        { 6, "SurfaceNormals" },
+        { 7, "Infrared" }
+    };
+
 AirsimRosWrapper::AirsimRosWrapper(ros::NodeHandle& node)
   : private_nh_("~")
   , nh_(node)
@@ -54,12 +64,12 @@ void AirsimRosWrapper::initializeRos()
     // ros params
     double update_airsim_control_every_n_sec;
     private_nh_.getParam("update_airsim_control_every_n_sec", update_airsim_control_every_n_sec);
-    // nh_private_.getParam("publish_clock", publish_clock_);
-    // nh_private_.param("world_frame_id", world_frame_id_, world_frame_id_);
+    // private_nh_.getParam("publish_clock", publish_clock_);
+    // private_nh_.param("world_frame_id", world_frame_id_, world_frame_id_);
     // odom_frame_id_ = world_frame_id_ == AIRSIM_FRAME_ID ? AIRSIM_ODOM_FRAME_ID : ENU_ODOM_FRAME_ID;
-    // nh_private_.param("odom_frame_id", odom_frame_id_, odom_frame_id_);
+    // private_nh_.param("odom_frame_id", odom_frame_id_, odom_frame_id_);
     // isENU_ = !(odom_frame_id_ == AIRSIM_ODOM_FRAME_ID);
-    // nh_private_.param("coordinate_system_enu", isENU_, isENU_);
+    // private_nh_.param("coordinate_system_enu", isENU_, isENU_);
     // vel_cmd_duration_ = 0.05; // todo rosparam
 
     createRosPubsFromSettingsJson();
@@ -67,20 +77,14 @@ void AirsimRosWrapper::initializeRos()
 }
 
 void AirsimRosWrapper::createRosPubsFromSettingsJson() {
-    ROS_INFO("entered create ros pubs from ssettings");
-    // subscribe to control commands on global nodehandle
-    // gimbal_angle_quat_cmd_sub_ = nh_private_.subscribe("gimbal_angle_quat_cmd", 50, &AirsimROSWrapper::gimbal_angle_quat_cmd_cb, this);
-    // gimbal_angle_euler_cmd_sub_ = nh_private_.subscribe("gimbal_angle_euler_cmd", 50, &AirsimROSWrapper::gimbal_angle_euler_cmd_cb, this);
-    // origin_geo_point_pub_ = nh_private_.advertise<airsim_ros_pkgs::GPSYaw>("origin_geo_point", 10);
-
-    // airsim_img_request_vehicle_name_pair_vec_.clear();
-    // image_pub_vec_.clear();
-    // cam_info_pub_vec_.clear();
-    // camera_info_msg_vec_.clear();
+    airsim_img_request_vehicle_name_pair_vec_.clear();
+    image_pub_vec_.clear();
+    cam_info_pub_vec_.clear();
+    camera_info_msg_vec_.clear();
     vehicle_name_ptr_map_.clear();
     size_t lidar_cnt = 0;
 
-    // image_transport::ImageTransport image_transporter(private_nh_);
+    image_transport::ImageTransport image_transporter(private_nh_);
 
     // iterate over std::map<std::string, std::unique_ptr<VehicleSetting>> vehicles;
     for (const auto& curr_vehicle_elem : AirSimSettings::singleton().vehicles) {
@@ -89,88 +93,87 @@ void AirsimRosWrapper::createRosPubsFromSettingsJson() {
 
         // nh_.setParam("/vehicle_name", curr_vehicle_name);
 
-        // set_nans_to_zeros_in_pose(*vehicle_setting);
+        setNansToZerosInPose(*vehicle_setting);
 
         std::unique_ptr<VehicleROS> vehicle_ros = std::unique_ptr<MultiRotorROS>(new MultiRotorROS());
 
         // vehicle_ros->odom_frame_id = curr_vehicle_name + "/" + odom_frame_id_;
         vehicle_ros->vehicle_name = curr_vehicle_name;
-        ROS_INFO("vehicle name is %s", vehicle_ros->vehicle_name);
 
         // append_static_vehicle_tf(vehicle_ros.get(), *vehicle_setting);
 
-        // vehicle_ros->odom_local_pub = nh_private_.advertise<nav_msgs::Odometry>(curr_vehicle_name + "/" + odom_frame_id_, 10);
+        // vehicle_ros->odom_local_pub = private_nh_.advertise<nav_msgs::Odometry>(curr_vehicle_name + "/" + odom_frame_id_, 10);
 
-        // vehicle_ros->env_pub = nh_private_.advertise<airsim_ros_pkgs::Environment>(curr_vehicle_name + "/environment", 10);
+        // vehicle_ros->env_pub = private_nh_.advertise<airsim_ros_pkgs::Environment>(curr_vehicle_name + "/environment", 10);
 
-        // vehicle_ros->global_gps_pub = nh_private_.advertise<sensor_msgs::NavSatFix>(curr_vehicle_name + "/global_gps", 10);
+        // vehicle_ros->global_gps_pub = private_nh_.advertise<sensor_msgs::NavSatFix>(curr_vehicle_name + "/global_gps", 10);
 
         // auto drone = static_cast<MultiRotorROS*>(vehicle_ros.get());
 
         // bind to a single callback. todo optimal subs queue length
         // bind multiple topics to a single callback, but keep track of which vehicle name it was by passing curr_vehicle_name as the 2nd argument
-        // drone->vel_cmd_body_frame_sub = nh_private_.subscribe<airsim_ros_pkgs::VelCmd>(
+        // drone->vel_cmd_body_frame_sub = private_nh_.subscribe<airsim_ros_pkgs::VelCmd>(
         //     curr_vehicle_name + "/vel_cmd_body_frame",
         //     1,
         //     boost::bind(&AirsimROSWrapper::vel_cmd_body_frame_cb, this, _1, vehicle_ros->vehicle_name));
         // // TODO: ros::TransportHints().tcpNoDelay();
 
-        // drone->vel_cmd_world_frame_sub = nh_private_.subscribe<airsim_ros_pkgs::VelCmd>(
+        // drone->vel_cmd_world_frame_sub = private_nh_.subscribe<airsim_ros_pkgs::VelCmd>(
         //     curr_vehicle_name + "/vel_cmd_world_frame",
         //     1,
         //     boost::bind(&AirsimROSWrapper::vel_cmd_world_frame_cb, this, _1, vehicle_ros->vehicle_name));
 
-        // drone->takeoff_srvr = nh_private_.advertiseService<airsim_ros_pkgs::Takeoff::Request, airsim_ros_pkgs::Takeoff::Response>(
+        // drone->takeoff_srvr = private_nh_.advertiseService<airsim_ros_pkgs::Takeoff::Request, airsim_ros_pkgs::Takeoff::Response>(
         //     curr_vehicle_name + "/takeoff",
         //     boost::bind(&AirsimROSWrapper::takeoff_srv_cb, this, _1, _2, vehicle_ros->vehicle_name));
 
-        // drone->land_srvr = nh_private_.advertiseService<airsim_ros_pkgs::Land::Request, airsim_ros_pkgs::Land::Response>(
+        // drone->land_srvr = private_nh_.advertiseService<airsim_ros_pkgs::Land::Request, airsim_ros_pkgs::Land::Response>(
         //     curr_vehicle_name + "/land",
         //     boost::bind(&AirsimROSWrapper::land_srv_cb, this, _1, _2, vehicle_ros->vehicle_name));
 
-            // vehicle_ros.reset_srvr = nh_private_.advertiseService(curr_vehicle_name + "/reset",&AirsimROSWrapper::reset_srv_cb, this);
+            // vehicle_ros.reset_srvr = private_nh_.advertiseService(curr_vehicle_name + "/reset",&AirsimROSWrapper::reset_srv_cb, this);
 
-        // // iterate over camera map std::map<std::string, CameraSetting> .cameras;
-        // for (auto& curr_camera_elem : vehicle_setting->cameras) {
-        //     auto& camera_setting = curr_camera_elem.second;
-        //     auto& curr_camera_name = curr_camera_elem.first;
+        // iterate over camera map std::map<std::string, CameraSetting> .cameras;
+        for (auto& curr_camera_elem : vehicle_setting->cameras) {
+            auto& camera_setting = curr_camera_elem.second;
+            auto& curr_camera_name = curr_camera_elem.first;
 
-        //     set_nans_to_zeros_in_pose(*vehicle_setting, camera_setting);
-        //     append_static_camera_tf(vehicle_ros.get(), curr_camera_name, camera_setting);
-        //     // camera_setting.gimbal
-        //     std::vector<ImageRequest> current_image_request_vec;
+            setNansToZerosInPose(*vehicle_setting, camera_setting);
+            // append_static_camera_tf(vehicle_ros.get(), curr_camera_name, camera_setting);
+            // camera_setting.gimbal
+            std::vector<ImageRequest> current_image_request_vec;
 
-        //     // iterate over capture_setting std::map<int, CaptureSetting> capture_settings
-        //     for (const auto& curr_capture_elem : camera_setting.capture_settings) {
-        //         const auto& capture_setting = curr_capture_elem.second;
+            // iterate over capture_setting std::map<int, CaptureSetting> capture_settings
+            for (const auto& curr_capture_elem : camera_setting.capture_settings) {
+                const auto& capture_setting = curr_capture_elem.second;
 
-        //         // todo why does AirSimSettings::loadCaptureSettings calls AirSimSettings::initializeCaptureSettings()
-        //         // which initializes default capture settings for _all_ NINE msr::airlib::ImageCaptureBase::ImageType
-        //         if (!(std::isnan(capture_setting.fov_degrees))) {
-        //             const ImageType curr_image_type = msr::airlib::Utils::toEnum<ImageType>(capture_setting.image_type);
-        //             // if scene / segmentation / surface normals / infrared, get uncompressed image with pixels_as_floats = false
-        //             if (curr_image_type == ImageType::Scene ||
-        //                 curr_image_type == ImageType::Segmentation ||
-        //                 curr_image_type == ImageType::SurfaceNormals ||
-        //                 curr_image_type == ImageType::Infrared) {
-        //                 current_image_request_vec.push_back(ImageRequest(curr_camera_name, curr_image_type, false, false));
-        //             }
-        //             // if {DepthPlanar, DepthPerspective,DepthVis, DisparityNormalized}, get float image
-        //             else {
-        //                 current_image_request_vec.push_back(ImageRequest(curr_camera_name, curr_image_type, true));
-        //             }
+                // todo why does AirSimSettings::loadCaptureSettings calls AirSimSettings::initializeCaptureSettings()
+                // which initializes default capture settings for _all_ NINE msr::airlib::ImageCaptureBase::ImageType
+                if (!(std::isnan(capture_setting.fov_degrees))) {
+                    const ImageType curr_image_type = msr::airlib::Utils::toEnum<ImageType>(capture_setting.image_type);
+                    // if scene / segmentation / surface normals / infrared, get uncompressed image with pixels_as_floats = false
+                    if (curr_image_type == ImageType::Scene ||
+                        curr_image_type == ImageType::Segmentation ||
+                        curr_image_type == ImageType::SurfaceNormals ||
+                        curr_image_type == ImageType::Infrared) {
+                        current_image_request_vec.push_back(ImageRequest(curr_camera_name, curr_image_type, false, false));
+                    }
+                    // if {DepthPlanar, DepthPerspective,DepthVis, DisparityNormalized}, get float image
+                    else {
+                        current_image_request_vec.push_back(ImageRequest(curr_camera_name, curr_image_type, true));
+                    }
 
-        //             const std::string cam_image_topic = curr_vehicle_name + "/" + curr_camera_name + "/" +
-        //                                                 image_type_int_to_string_map_.at(capture_setting.image_type);
+                    const std::string cam_image_topic = curr_vehicle_name + "/" + curr_camera_name + "/" +
+                                                        image_type_int_to_string_map_.at(capture_setting.image_type);
 
-        //             image_pub_vec_.push_back(image_transporter.advertise(cam_image_topic, 1));
-        //             cam_info_pub_vec_.push_back(nh_private_.advertise<sensor_msgs::CameraInfo>(cam_image_topic + "/camera_info", 10));
-        //             camera_info_msg_vec_.push_back(generate_cam_info(curr_camera_name, camera_setting, capture_setting));
-        //         }
-        //     }
-        //     // push back pair (vector of image captures, current vehicle name)
-        //     airsim_img_request_vehicle_name_pair_vec_.push_back({ current_image_request_vec, curr_vehicle_name });
-        // }
+                    image_pub_vec_.push_back(image_transporter.advertise(cam_image_topic, 1));
+                    cam_info_pub_vec_.push_back(private_nh_.advertise<sensor_msgs::CameraInfo>(cam_image_topic + "/camera_info", 10));
+                    camera_info_msg_vec_.push_back(generateCamInfo(curr_camera_name, camera_setting, capture_setting));
+                }
+            }
+            // push back pair (vector of image captures, current vehicle name)
+            airsim_img_request_vehicle_name_pair_vec_.push_back({ current_image_request_vec, curr_vehicle_name });
+        }
 
         // // iterate over sensors
         // std::vector<SensorPublisher> sensors;
@@ -182,27 +185,27 @@ void AirsimRosWrapper::createRosPubsFromSettingsJson() {
         //         switch (sensor_setting->sensor_type) {
         //         case SensorBase::SensorType::Barometer: {
         //             ROS_INFO_STREAM(sensor_name << ": Barometer");
-        //             sensor_publisher.publisher = nh_private_.advertise<airsim_ros_pkgs::Altimeter>(curr_vehicle_name + "/altimeter/" + sensor_name, 10);
+        //             sensor_publisher.publisher = private_nh_.advertise<airsim_ros_pkgs::Altimeter>(curr_vehicle_name + "/altimeter/" + sensor_name, 10);
         //             break;
         //         }
         //         case SensorBase::SensorType::Imu: {
         //             ROS_INFO_STREAM(sensor_name << ": IMU");
-        //             sensor_publisher.publisher = nh_private_.advertise<sensor_msgs::Imu>(curr_vehicle_name + "/imu/" + sensor_name, 10);
+        //             sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::Imu>(curr_vehicle_name + "/imu/" + sensor_name, 10);
         //             break;
         //         }
         //         case SensorBase::SensorType::Gps: {
         //             ROS_INFO_STREAM(sensor_name << ": GPS");
-        //             sensor_publisher.publisher = nh_private_.advertise<sensor_msgs::NavSatFix>(curr_vehicle_name + "/gps/" + sensor_name, 10);
+        //             sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::NavSatFix>(curr_vehicle_name + "/gps/" + sensor_name, 10);
         //             break;
         //         }
         //         case SensorBase::SensorType::Magnetometer: {
         //             ROS_INFO_STREAM(sensor_name << ": Magnetometer");
-        //             sensor_publisher.publisher = nh_private_.advertise<sensor_msgs::MagneticField>(curr_vehicle_name + "/magnetometer/" + sensor_name, 10);
+        //             sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::MagneticField>(curr_vehicle_name + "/magnetometer/" + sensor_name, 10);
         //             break;
         //         }
         //         case SensorBase::SensorType::Distance: {
         //             ROS_INFO_STREAM(sensor_name << ": Distance sensor");
-        //             sensor_publisher.publisher = nh_private_.advertise<sensor_msgs::Range>(curr_vehicle_name + "/distance/" + sensor_name, 10);
+        //             sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::Range>(curr_vehicle_name + "/distance/" + sensor_name, 10);
         //             break;
         //         }
         //         case SensorBase::SensorType::Lidar: {
@@ -211,7 +214,7 @@ void AirsimRosWrapper::createRosPubsFromSettingsJson() {
         //             msr::airlib::LidarSimpleParams params;
         //             params.initializeFromSettings(lidar_setting);
         //             append_static_lidar_tf(vehicle_ros.get(), sensor_name, params);
-        //             sensor_publisher.publisher = nh_private_.advertise<sensor_msgs::PointCloud2>(curr_vehicle_name + "/lidar/" + sensor_name, 10);
+        //             sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::PointCloud2>(curr_vehicle_name + "/lidar/" + sensor_name, 10);
         //             break;
         //         }
         //         default: {
@@ -237,57 +240,118 @@ void AirsimRosWrapper::createRosPubsFromSettingsJson() {
 
     // // add takeoff and land all services if more than 2 drones
     // if (vehicle_name_ptr_map_.size() > 1 && airsim_mode_ == AIRSIM_MODE::DRONE) {
-    //     takeoff_all_srvr_ = nh_private_.advertiseService("all_robots/takeoff", &AirsimROSWrapper::takeoff_all_srv_cb, this);
-    //     land_all_srvr_ = nh_private_.advertiseService("all_robots/land", &AirsimROSWrapper::land_all_srv_cb, this);
+    //     takeoff_all_srvr_ = private_nh_.advertiseService("all_robots/takeoff", &AirsimROSWrapper::takeoff_all_srv_cb, this);
+    //     land_all_srvr_ = private_nh_.advertiseService("all_robots/land", &AirsimROSWrapper::land_all_srv_cb, this);
 
     //     // gimbal_angle_quat_cmd_sub_ = nh_.subscribe("gimbal_angle_quat_cmd", 50, &AirsimROSWrapper::gimbal_angle_quat_cmd_cb, this);
 
-    //     vel_cmd_all_body_frame_sub_ = nh_private_.subscribe("all_robots/vel_cmd_body_frame", 1, &AirsimROSWrapper::vel_cmd_all_body_frame_cb, this);
-    //     vel_cmd_all_world_frame_sub_ = nh_private_.subscribe("all_robots/vel_cmd_world_frame", 1, &AirsimROSWrapper::vel_cmd_all_world_frame_cb, this);
+    //     vel_cmd_all_body_frame_sub_ = private_nh_.subscribe("all_robots/vel_cmd_body_frame", 1, &AirsimROSWrapper::vel_cmd_all_body_frame_cb, this);
+    //     vel_cmd_all_world_frame_sub_ = private_nh_.subscribe("all_robots/vel_cmd_world_frame", 1, &AirsimROSWrapper::vel_cmd_all_world_frame_cb, this);
 
-    //     vel_cmd_group_body_frame_sub_ = nh_private_.subscribe("group_of_robots/vel_cmd_body_frame", 1, &AirsimROSWrapper::vel_cmd_group_body_frame_cb, this);
-    //     vel_cmd_group_world_frame_sub_ = nh_private_.subscribe("group_of_robots/vel_cmd_world_frame", 1, &AirsimROSWrapper::vel_cmd_group_world_frame_cb, this);
+    //     vel_cmd_group_body_frame_sub_ = private_nh_.subscribe("group_of_robots/vel_cmd_body_frame", 1, &AirsimROSWrapper::vel_cmd_group_body_frame_cb, this);
+    //     vel_cmd_group_world_frame_sub_ = private_nh_.subscribe("group_of_robots/vel_cmd_world_frame", 1, &AirsimROSWrapper::vel_cmd_group_world_frame_cb, this);
 
-    //     takeoff_group_srvr_ = nh_private_.advertiseService("group_of_robots/takeoff", &AirsimROSWrapper::takeoff_group_srv_cb, this);
-    //     land_group_srvr_ = nh_private_.advertiseService("group_of_robots/land", &AirsimROSWrapper::land_group_srv_cb, this);
+    //     takeoff_group_srvr_ = private_nh_.advertiseService("group_of_robots/takeoff", &AirsimROSWrapper::takeoff_group_srv_cb, this);
+    //     land_group_srvr_ = private_nh_.advertiseService("group_of_robots/land", &AirsimROSWrapper::land_group_srv_cb, this);
     // }
 
     // // todo add per vehicle reset in AirLib API
-    // reset_srvr_ = nh_private_.advertiseService("reset", &AirsimROSWrapper::reset_srv_cb, this);
+    // reset_srvr_ = private_nh_.advertiseService("reset", &AirsimROSWrapper::reset_srv_cb, this);
 
     // if (publish_clock_) {
-    //     clock_pub_ = nh_private_.advertise<rosgraph_msgs::Clock>("clock", 1);
+    //     clock_pub_ = private_nh_.advertise<rosgraph_msgs::Clock>("clock", 1);
     // }
 
     // // if >0 cameras, add one more thread for img_request_timer_cb
     // ROS_INFO("in ros settings setup airsim, sz of img vehicle pair list %d", airsim_img_request_vehicle_name_pair_vec_.size());
     // if (!airsim_img_request_vehicle_name_pair_vec_.empty()) {
     //     double update_airsim_img_response_every_n_sec;
-    //     nh_private_.getParam("update_airsim_img_response_every_n_sec", update_airsim_img_response_every_n_sec);
+    //     private_nh_.getParam("update_airsim_img_response_every_n_sec", update_airsim_img_response_every_n_sec);
 
     //     ros::TimerOptions timer_options(ros::Duration(update_airsim_img_response_every_n_sec),
     //                                     boost::bind(&AirsimROSWrapper::img_response_timer_cb, this, _1),
     //                                     &img_timer_cb_queue_);
 
-    //     airsim_img_response_timer_ = nh_private_.createTimer(timer_options);
+    //     airsim_img_response_timer_ = private_nh_.createTimer(timer_options);
     //     is_used_img_timer_cb_queue_ = true;
     // }
 
     // // lidars update on their own callback/thread at a given rate
     // if (lidar_cnt > 0) {
     //     double update_lidar_every_n_sec;
-    //     nh_private_.getParam("update_lidar_every_n_sec", update_lidar_every_n_sec);
-    //     // nh_private_.setCallbackQueue(&lidar_timer_cb_queue_);
+    //     private_nh_.getParam("update_lidar_every_n_sec", update_lidar_every_n_sec);
+    //     // private_nh_.setCallbackQueue(&lidar_timer_cb_queue_);
 
     //     ros::TimerOptions timer_options(ros::Duration(update_lidar_every_n_sec),
     //                                     boost::bind(&AirsimROSWrapper::lidar_timer_cb, this, _1),
     //                                     &lidar_timer_cb_queue_);
 
-    //     airsim_lidar_update_timer_ = nh_private_.createTimer(timer_options);
+    //     airsim_lidar_update_timer_ = private_nh_.createTimer(timer_options);
     //     is_used_lidar_timer_cb_queue_ = true;
     // }
 
     initializeAirsim();
+}
+
+// airsim uses nans for zeros in settings.json. we set them to zeros here for handling tfs in ROS
+void AirsimRosWrapper::setNansToZerosInPose(VehicleSetting& vehicle_setting) const
+{
+    if (std::isnan(vehicle_setting.position.x()))
+        vehicle_setting.position.x() = 0.0;
+
+    if (std::isnan(vehicle_setting.position.y()))
+        vehicle_setting.position.y() = 0.0;
+
+    if (std::isnan(vehicle_setting.position.z()))
+        vehicle_setting.position.z() = 0.0;
+
+    if (std::isnan(vehicle_setting.rotation.yaw))
+        vehicle_setting.rotation.yaw = 0.0;
+
+    if (std::isnan(vehicle_setting.rotation.pitch))
+        vehicle_setting.rotation.pitch = 0.0;
+
+    if (std::isnan(vehicle_setting.rotation.roll))
+        vehicle_setting.rotation.roll = 0.0;
+}
+
+// if any nan's in camera pose, set them to match vehicle pose (which has already converted any potential nans to zeros)
+void AirsimRosWrapper::setNansToZerosInPose(const VehicleSetting& vehicle_setting, CameraSetting& camera_setting) const
+{
+    if (std::isnan(camera_setting.position.x()))
+        camera_setting.position.x() = vehicle_setting.position.x();
+
+    if (std::isnan(camera_setting.position.y()))
+        camera_setting.position.y() = vehicle_setting.position.y();
+
+    if (std::isnan(camera_setting.position.z()))
+        camera_setting.position.z() = vehicle_setting.position.z();
+
+    if (std::isnan(camera_setting.rotation.yaw))
+        camera_setting.rotation.yaw = vehicle_setting.rotation.yaw;
+
+    if (std::isnan(camera_setting.rotation.pitch))
+        camera_setting.rotation.pitch = vehicle_setting.rotation.pitch;
+
+    if (std::isnan(camera_setting.rotation.roll))
+        camera_setting.rotation.roll = vehicle_setting.rotation.roll;
+}
+
+// todo have a special stereo pair mode and get projection matrix by calculating offset wrt drone body frame?
+sensor_msgs::CameraInfo AirsimRosWrapper::generateCamInfo(const std::string& camera_name,
+                                                            const CameraSetting& camera_setting,
+                                                            const CaptureSetting& capture_setting) const
+{
+    sensor_msgs::CameraInfo cam_info_msg;
+    cam_info_msg.header.frame_id = camera_name + "_optical";
+    cam_info_msg.height = capture_setting.height;
+    cam_info_msg.width = capture_setting.width;
+    float f_x = (capture_setting.width / 2.0) / tan(math_common::deg2rad(capture_setting.fov_degrees / 2.0));
+    // todo focal length in Y direction should be same as X it seems. this can change in future a scene capture component which exactly correponds to a cine camera
+    // float f_y = (capture_setting.height / 2.0) / tan(math_common::deg2rad(fov_degrees / 2.0));
+    cam_info_msg.K = { f_x, 0.0, capture_setting.width / 2.0, 0.0, f_x, capture_setting.height / 2.0, 0.0, 0.0, 1.0 };
+    cam_info_msg.P = { f_x, 0.0, capture_setting.width / 2.0, 0.0, 0.0, f_x, capture_setting.height / 2.0, 0.0, 0.0, 0.0, 1.0, 0.0 };
+    return cam_info_msg;
 }
 
 void AirsimRosWrapper::droneStateTimerCallback(const ros::TimerEvent& event)
