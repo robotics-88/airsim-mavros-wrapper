@@ -30,10 +30,37 @@ AirsimRosWrapper::AirsimRosWrapper(ros::NodeHandle& node)
   , airsim_client_images_(host_ip_)
   , airsim_client_lidar_(host_ip_)
 {
+    parseAirsimSettings();
     initializeRos();
+
+    std::cout << "AirsimROSWrapper Initialized!\n";
 }
 
 AirsimRosWrapper::~AirsimRosWrapper(){}
+
+bool AirsimRosWrapper::parseAirsimSettings() {
+    msr::airlib::RpcLibClientBase airsim_client(host_ip_);
+    airsim_client.confirmConnection();
+
+    settings_text_ = airsim_client.getSettingsString();
+
+    bool text = !settings_text_.empty();
+
+    if (text) {
+        AirSimSettings::initializeSettings(settings_text_);
+
+        AirSimSettings::singleton().load(std::bind(&AirsimRosWrapper::getSimMode, this));
+        std::cout << "SimMode: " << AirSimSettings::singleton().simmode_name << std::endl;
+
+        return true;
+    }
+    return false;
+}
+
+std::string AirsimRosWrapper::getSimMode() {
+    const auto& settings_json = msr::airlib::Settings::loadJSonString(settings_text_);
+    return settings_json.getString("SimMode", "");
+}
 
 void AirsimRosWrapper::initializeAirsim()
 {
@@ -44,6 +71,8 @@ void AirsimRosWrapper::initializeAirsim()
         airsim_client_->confirmConnection();
         airsim_client_images_.confirmConnection();
         airsim_client_lidar_.confirmConnection();
+
+        ROS_INFO("in airsim init, veh name map size %d", vehicle_name_ptr_map_.size());
 
         for (const auto& vehicle_name_ptr_pair : vehicle_name_ptr_map_) {
             airsim_client_->enableApiControl(true, vehicle_name_ptr_pair.first); // todo expose as rosservice?

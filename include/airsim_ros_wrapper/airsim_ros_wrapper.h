@@ -147,6 +147,11 @@ class AirsimRosWrapper {
         std::vector<ros::Publisher> cam_info_pub_vec_;
         std::vector<sensor_msgs::CameraInfo> camera_info_msg_vec_;
 
+        std::string settings_text_;
+
+        bool parseAirsimSettings();
+        std::string getSimMode();
+
         void createRosPubsFromSettingsJson();
         void setNansToZerosInPose(VehicleSetting& vehicle_setting) const;
         void setNansToZerosInPose(const VehicleSetting& vehicle_setting, CameraSetting& camera_setting) const;
