@@ -12,16 +12,21 @@ set(RPC_LIB_INCLUDES " ${AIRSIM_ROOT}/external/rpclib/rpclib-2.3.0/include")
 set(RPC_LIB rpc) # name of .a file with lib prefix
 message(STATUS "found RPC_LIB_INCLUDES=${RPC_LIB_INCLUDES}")
 
+find_package(OpenCV REQUIRED)
+
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
+  cv_bridge
   image_transport
+  mavros_msgs
+  nav_msgs
   roscpp
   roslib
   std_msgs
   tf2
-  tf2_msgs
-  tf2_ros
   tf2_geometry_msgs
+  tf2_ros
+  tf2_sensor_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -57,6 +62,7 @@ include_directories(
   ${RPC_LIB_INCLUDES}
   ${AIRSIM_ROOT}/MavLinkCom/include
   ${AIRSIM_ROOT}/MavLinkCom/common_utils
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a C++ executable
@@ -67,9 +73,9 @@ add_executable(airsim_node
 add_library(airsim_ros 
   src/airsim_ros_wrapper.cpp
 )
+target_link_libraries(airsim_ros ${catkin_LIBRARIES} ${OpenCV_LIBS} yaml-cpp AirLib)
 
 add_dependencies(airsim_ros ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
 target_link_libraries(airsim_node airsim_ros ${catkin_LIBRARIES} ${OpenCV_LIBS} AirLib)
 
 

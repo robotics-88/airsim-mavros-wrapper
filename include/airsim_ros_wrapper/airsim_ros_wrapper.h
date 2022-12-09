@@ -8,10 +8,19 @@ Author: Erin Linebarger <erin@robotics88.com>
 
 #include <ros/ros.h>
 
+#include <opencv2/opencv.hpp>
+#include <cv_bridge/cv_bridge.h>
+
 #include <image_transport/image_transport.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/NavSatFix.h>
+#include <tf2/convert.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/static_transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
 #ifndef RPCLIB_MSGPACK
@@ -50,6 +59,9 @@ class AirsimRosWrapper {
         void lidarTimerCallback(const ros::TimerEvent& event);
 
         ros::Time updateState();
+
+        bool is_used_lidar_timer_cb_queue_;
+        bool is_used_img_timer_cb_queue_;
 
     private:
         // utility struct for a SINGLE robot
@@ -107,6 +119,12 @@ class AirsimRosWrapper {
         tf2_ros::TransformListener tf_listener_;
         std::string host_ip_;
 
+        std::string odom_frame_id_;
+        std::string world_frame_id_;
+        std::string map_frame_id_;
+        tf2_ros::TransformBroadcaster tf_broadcaster_;
+        tf2_ros::StaticTransformBroadcaster static_tf_pub_;
+
         std::unique_ptr<msr::airlib::MultirotorRpcLibClient> airsim_client_ = nullptr;
         // separate busy connections to airsim, update in their own thread
         msr::airlib::MultirotorRpcLibClient airsim_client_images_;
@@ -120,6 +138,9 @@ class AirsimRosWrapper {
         ros::Timer airsim_control_update_timer_;
         ros::Timer airsim_lidar_update_timer_;
 
+        ros::CallbackQueue img_timer_cb_queue_;
+        ros::CallbackQueue lidar_timer_cb_queue_;
+
         typedef std::pair<std::vector<ImageRequest>, std::string> airsim_img_request_vehicle_name_pair;
         std::vector<airsim_img_request_vehicle_name_pair> airsim_img_request_vehicle_name_pair_vec_;
         std::vector<image_transport::Publisher> image_pub_vec_;
@@ -129,6 +150,11 @@ class AirsimRosWrapper {
         void createRosPubsFromSettingsJson();
         void setNansToZerosInPose(VehicleSetting& vehicle_setting) const;
         void setNansToZerosInPose(const VehicleSetting& vehicle_setting, CameraSetting& camera_setting) const;
+        void appendStaticVehicleTf(VehicleROS* vehicle_ros, const VehicleSetting& vehicle_setting);
+        void appendStaticCameraTf(VehicleROS* vehicle_ros, const std::string& camera_name, const CameraSetting& camera_setting);
+
+        void publishVehicleState();
+        void processAndPublishImgResponse(const std::vector<ImageResponse>& img_response_vec, const int img_response_idx, const std::string& vehicle_name);
 
         ros::Time airsimTimestampToRos(const msr::airlib::TTimePoint& stamp) const;
         ros::Time chronoTimestampToRos(const std::chrono::system_clock::time_point& stamp) const;
@@ -136,6 +162,13 @@ class AirsimRosWrapper {
         sensor_msgs::CameraInfo generateCamInfo(const std::string& camera_name,
                                                 const CameraSetting& camera_setting,
                                                 const CaptureSetting& capture_setting) const;
+        sensor_msgs::ImagePtr getImgMsgFromResponse(const ImageResponse& img_response,
+                                                    const ros::Time curr_ros_time,
+                                                    const std::string frame_id);
+        sensor_msgs::ImagePtr getDepthImgMsgFromResponse(const ImageResponse& img_response,
+                                                        const ros::Time curr_ros_time,
+                                                        const std::string frame_id);
+        cv::Mat manualDecodeDepth(const ImageResponse& img_response) const;
 
 };
 
