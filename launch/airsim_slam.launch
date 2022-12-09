@@ -2,6 +2,11 @@
     <!-- <include file="$(find vehicle_launch)/launch/airsim_mavros.launch"/> -->
     <!-- Fill in with airsim wrapper node and rtabmap -->
 
-    <node pkg="vehicle_launch" type="airsim_node" respawn="false" name="airsim_ros_node" output="screen"/>
-    <!-- </node> -->
+    <arg name="image_pub_freq" default=".1"/>
+    <arg name="lidar_pub_freq" default=".1"/>
+
+    <node pkg="vehicle_launch" type="airsim_node" respawn="false" name="airsim_ros_node" output="screen">
+        <param name="update_airsim_img_response_every_n_sec" value="$(arg image_pub_freq)" />
+        <param name="update_lidar_every_n_sec" value="$(arg lidar_pub_freq)" />
+    </node>
 </launch>

@@ -20,7 +20,9 @@ namespace airsim_ros
     };
 
 AirsimRosWrapper::AirsimRosWrapper(ros::NodeHandle& node)
-  : private_nh_("~")
+  : is_used_lidar_timer_cb_queue_(false)
+  , is_used_img_timer_cb_queue_(false)
+  , private_nh_("~")
   , nh_(node)
   , tf_listener_(tf_buffer_)
   , host_ip_("127.0.0.1")
@@ -30,6 +32,8 @@ AirsimRosWrapper::AirsimRosWrapper(ros::NodeHandle& node)
   , airsim_client_images_(host_ip_)
   , airsim_client_lidar_(host_ip_)
 {
+    ros_clock_.clock.fromSec(0);
+
     parseAirsimSettings();
     initializeRos();
 
@@ -208,65 +212,65 @@ void AirsimRosWrapper::createRosPubsFromSettingsJson() {
             airsim_img_request_vehicle_name_pair_vec_.push_back({ current_image_request_vec, curr_vehicle_name });
         }
 
-        // // iterate over sensors
-        // std::vector<SensorPublisher> sensors;
-        // for (const auto& [sensor_name, sensor_setting] : vehicle_setting->sensors) {
-        //     if (sensor_setting->enabled) {
-        //         SensorPublisher sensor_publisher;
-        //         sensor_publisher.sensor_name = sensor_name;
-        //         sensor_publisher.sensor_type = sensor_setting->sensor_type;
-        //         switch (sensor_setting->sensor_type) {
-        //         case SensorBase::SensorType::Barometer: {
-        //             ROS_INFO_STREAM(sensor_name << ": Barometer");
-        //             sensor_publisher.publisher = private_nh_.advertise<airsim_ros_pkgs::Altimeter>(curr_vehicle_name + "/altimeter/" + sensor_name, 10);
-        //             break;
-        //         }
-        //         case SensorBase::SensorType::Imu: {
-        //             ROS_INFO_STREAM(sensor_name << ": IMU");
-        //             sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::Imu>(curr_vehicle_name + "/imu/" + sensor_name, 10);
-        //             break;
-        //         }
-        //         case SensorBase::SensorType::Gps: {
-        //             ROS_INFO_STREAM(sensor_name << ": GPS");
-        //             sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::NavSatFix>(curr_vehicle_name + "/gps/" + sensor_name, 10);
-        //             break;
-        //         }
-        //         case SensorBase::SensorType::Magnetometer: {
-        //             ROS_INFO_STREAM(sensor_name << ": Magnetometer");
-        //             sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::MagneticField>(curr_vehicle_name + "/magnetometer/" + sensor_name, 10);
-        //             break;
-        //         }
-        //         case SensorBase::SensorType::Distance: {
-        //             ROS_INFO_STREAM(sensor_name << ": Distance sensor");
-        //             sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::Range>(curr_vehicle_name + "/distance/" + sensor_name, 10);
-        //             break;
-        //         }
-        //         case SensorBase::SensorType::Lidar: {
-        //             ROS_INFO_STREAM(sensor_name << ": Lidar");
-        //             auto lidar_setting = *static_cast<LidarSetting*>(sensor_setting.get());
-        //             msr::airlib::LidarSimpleParams params;
-        //             params.initializeFromSettings(lidar_setting);
-        //             append_static_lidar_tf(vehicle_ros.get(), sensor_name, params);
-        //             sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::PointCloud2>(curr_vehicle_name + "/lidar/" + sensor_name, 10);
-        //             break;
-        //         }
-        //         default: {
-        //             throw std::invalid_argument("Unexpected sensor type");
-        //         }
-        //         }
-        //         sensors.emplace_back(sensor_publisher);
-        //     }
-        // }
+        // iterate over sensors
+        std::vector<SensorPublisher> sensors;
+        for (const auto& [sensor_name, sensor_setting] : vehicle_setting->sensors) {
+            if (sensor_setting->enabled) {
+                SensorPublisher sensor_publisher;
+                sensor_publisher.sensor_name = sensor_name;
+                sensor_publisher.sensor_type = sensor_setting->sensor_type;
+                switch (sensor_setting->sensor_type) {
+                // case SensorBase::SensorType::Barometer: {
+                //     ROS_INFO_STREAM(sensor_name << ": Barometer");
+                //     sensor_publisher.publisher = private_nh_.advertise<airsim_ros_pkgs::Altimeter>(curr_vehicle_name + "/altimeter/" + sensor_name, 10);
+                //     break;
+                // }
+                case SensorBase::SensorType::Imu: {
+                    ROS_INFO_STREAM(sensor_name << ": IMU");
+                    sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::Imu>(curr_vehicle_name + "/imu/" + sensor_name, 10);
+                    break;
+                }
+                case SensorBase::SensorType::Gps: {
+                    ROS_INFO_STREAM(sensor_name << ": GPS");
+                    sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::NavSatFix>(curr_vehicle_name + "/gps/" + sensor_name, 10);
+                    break;
+                }
+                case SensorBase::SensorType::Magnetometer: {
+                    ROS_INFO_STREAM(sensor_name << ": Magnetometer");
+                    sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::MagneticField>(curr_vehicle_name + "/magnetometer/" + sensor_name, 10);
+                    break;
+                }
+                case SensorBase::SensorType::Distance: {
+                    ROS_INFO_STREAM(sensor_name << ": Distance sensor");
+                    sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::Range>(curr_vehicle_name + "/distance/" + sensor_name, 10);
+                    break;
+                }
+                case SensorBase::SensorType::Lidar: {
+                    ROS_INFO_STREAM(sensor_name << ": Lidar");
+                    auto lidar_setting = *static_cast<LidarSetting*>(sensor_setting.get());
+                    msr::airlib::LidarSimpleParams params;
+                    params.initializeFromSettings(lidar_setting);
+                    appendStaticLidarTf(vehicle_ros.get(), sensor_name, params);
+                    sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::PointCloud2>(curr_vehicle_name + "/lidar/" + sensor_name, 10);
+                    break;
+                }
+                default: {
+                    // throw std::invalid_argument("Unexpected sensor type");
+                }
+                }
+                sensors.emplace_back(sensor_publisher);
+            }
+        }
 
         // // we want fast access to the lidar sensors for callback handling, sort them out now
-        // auto isLidar = [](const SensorPublisher& pub) {
-        //     return pub.sensor_type == SensorBase::SensorType::Lidar;
-        // };
-        // size_t cnt = std::count_if(sensors.begin(), sensors.end(), isLidar);
-        // lidar_cnt += cnt;
-        // vehicle_ros->lidar_pubs.resize(cnt);
-        // vehicle_ros->sensor_pubs.resize(sensors.size() - cnt);
-        // std::partition_copy(sensors.begin(), sensors.end(), vehicle_ros->lidar_pubs.begin(), vehicle_ros->sensor_pubs.begin(), isLidar);
+        auto isLidar = [](const SensorPublisher& pub) {
+            return pub.sensor_type == SensorBase::SensorType::Lidar;
+        };
+        size_t cnt = std::count_if(sensors.begin(), sensors.end(), isLidar);
+        lidar_cnt += cnt;
+        vehicle_ros->lidar_pubs.resize(cnt);
+        vehicle_ros->sensor_pubs.resize(sensors.size() - cnt);
+        std::partition_copy(sensors.begin(), sensors.end(), vehicle_ros->lidar_pubs.begin(), vehicle_ros->sensor_pubs.begin(), isLidar);
 
         vehicle_name_ptr_map_.emplace(curr_vehicle_name, std::move(vehicle_ros)); // allows fast lookup in command callbacks in case of a lot of drones
     }
@@ -291,37 +295,25 @@ void AirsimRosWrapper::createRosPubsFromSettingsJson() {
     // // todo add per vehicle reset in AirLib API
     // reset_srvr_ = private_nh_.advertiseService("reset", &AirsimROSWrapper::reset_srv_cb, this);
 
-    // if (publish_clock_) {
-    //     clock_pub_ = private_nh_.advertise<rosgraph_msgs::Clock>("clock", 1);
-    // }
+    if (publish_clock_) {
+        clock_pub_ = private_nh_.advertise<rosgraph_msgs::Clock>("clock", 1);
+    }
 
     // if >0 cameras, add one more thread for img_request_timer_cb
-    // ROS_INFO("in ros settings setup airsim, sz of img vehicle pair list %d", airsim_img_request_vehicle_name_pair_vec_.size());
+    ROS_INFO("in ros settings setup airsim, sz of img vehicle pair list %d", airsim_img_request_vehicle_name_pair_vec_.size());
     if (!airsim_img_request_vehicle_name_pair_vec_.empty()) {
         double update_airsim_img_response_every_n_sec;
         private_nh_.getParam("update_airsim_img_response_every_n_sec", update_airsim_img_response_every_n_sec);
-
-        ros::TimerOptions timer_options(ros::Duration(update_airsim_img_response_every_n_sec),
-                                        boost::bind(&AirsimRosWrapper::imgResponseTimerCallback, this, _1),
-                                        &img_timer_cb_queue_);
-
-        airsim_img_response_timer_ = private_nh_.createTimer(timer_options);
-        is_used_img_timer_cb_queue_ = true;
+        airsim_img_response_timer_ = private_nh_.createTimer(ros::Duration(update_airsim_img_response_every_n_sec), &AirsimRosWrapper::imgResponseTimerCallback, this);
     }
 
-    // // lidars update on their own callback/thread at a given rate
-    // if (lidar_cnt > 0) {
-    //     double update_lidar_every_n_sec;
-    //     private_nh_.getParam("update_lidar_every_n_sec", update_lidar_every_n_sec);
-    //     // private_nh_.setCallbackQueue(&lidar_timer_cb_queue_);
-
-    //     ros::TimerOptions timer_options(ros::Duration(update_lidar_every_n_sec),
-    //                                     boost::bind(&AirsimROSWrapper::lidar_timer_cb, this, _1),
-    //                                     &lidar_timer_cb_queue_);
-
-    //     airsim_lidar_update_timer_ = private_nh_.createTimer(timer_options);
-    //     is_used_lidar_timer_cb_queue_ = true;
-    // }
+    // lidars update on their own callback/thread at a given rate
+    if (lidar_cnt > 0) {
+        double update_lidar_every_n_sec;
+        private_nh_.getParam("update_lidar_every_n_sec", update_lidar_every_n_sec);
+        // private_nh_.setCallbackQueue(&lidar_timer_cb_queue_);
+        airsim_lidar_update_timer_ = private_nh_.createTimer(ros::Duration(update_lidar_every_n_sec), &AirsimRosWrapper::lidarTimerCallback, this);
+    }
 
     initializeAirsim();
 }
@@ -422,6 +414,22 @@ void AirsimRosWrapper::appendStaticCameraTf(VehicleROS* vehicle_ros, const std::
     vehicle_ros->static_tf_msg_vec.emplace_back(static_cam_tf_optical_msg);
 }
 
+void AirsimRosWrapper::appendStaticLidarTf(VehicleROS* vehicle_ros, const std::string& lidar_name, const msr::airlib::LidarSimpleParams& lidar_setting)
+{
+    geometry_msgs::TransformStamped lidar_tf_msg;
+    lidar_tf_msg.header.frame_id = vehicle_ros->vehicle_name + "/" + odom_frame_id_;
+    lidar_tf_msg.child_frame_id = vehicle_ros->vehicle_name + "/" + lidar_name;
+    lidar_tf_msg.transform.translation.x = lidar_setting.relative_pose.position.x();
+    lidar_tf_msg.transform.translation.y = lidar_setting.relative_pose.position.y();
+    lidar_tf_msg.transform.translation.z = lidar_setting.relative_pose.position.z();
+    lidar_tf_msg.transform.rotation.x = lidar_setting.relative_pose.orientation.x();
+    lidar_tf_msg.transform.rotation.y = lidar_setting.relative_pose.orientation.y();
+    lidar_tf_msg.transform.rotation.z = lidar_setting.relative_pose.orientation.z();
+    lidar_tf_msg.transform.rotation.w = lidar_setting.relative_pose.orientation.w();
+
+    vehicle_ros->static_tf_msg_vec.emplace_back(lidar_tf_msg);
+}
+
 // todo have a special stereo pair mode and get projection matrix by calculating offset wrt drone body frame?
 sensor_msgs::CameraInfo AirsimRosWrapper::generateCamInfo(const std::string& camera_name,
                                                             const CameraSetting& camera_setting,
@@ -448,15 +456,15 @@ void AirsimRosWrapper::droneStateTimerCallback(const ros::TimerEvent& event)
         // get the basic vehicle pose and environmental state
         const auto now = updateState();
 
-        // // on init, will publish 0 to /clock as expected for use_sim_time compatibility
-        // if (!airsim_client_->simIsPaused()) {
-        //     // airsim_client needs to provide the simulation time in a future version of the API
-        //     ros_clock_.clock = now;
-        // }
-        // // publish the simulation clock
-        // if (publish_clock_) {
-        //     clock_pub_.publish(ros_clock_);
-        // }
+        // on init, will publish 0 to /clock as expected for use_sim_time compatibility
+        if (!airsim_client_->simIsPaused()) {
+            // airsim_client needs to provide the simulation time in a future version of the API
+            ros_clock_.clock = now;
+        }
+        // publish the simulation clock
+        if (publish_clock_) {
+            clock_pub_.publish(ros_clock_);
+        }
 
         // publish vehicle state, odom, and all basic sensor types
         publishVehicleState();
@@ -474,7 +482,6 @@ void AirsimRosWrapper::droneStateTimerCallback(const ros::TimerEvent& event)
 
 void AirsimRosWrapper::imgResponseTimerCallback(const ros::TimerEvent& event)
 {
-    // ROS_INFO("entered img resposne timer cb, vec len is %d", airsim_img_request_vehicle_name_pair_vec_.size());
     try {
         int image_response_idx = 0;
         for (const auto& airsim_img_request_vehicle_name_pair : airsim_img_request_vehicle_name_pair_vec_) {
@@ -492,6 +499,70 @@ void AirsimRosWrapper::imgResponseTimerCallback(const ros::TimerEvent& event)
         std::cout << "Exception raised by the API, didn't get image response." << std::endl
                   << msg << std::endl;
     }
+}
+
+void AirsimRosWrapper::lidarTimerCallback(const ros::TimerEvent& event)
+{
+    try {
+        for (auto& vehicle_name_ptr_pair : vehicle_name_ptr_map_) {
+            if (!vehicle_name_ptr_pair.second->lidar_pubs.empty()) {
+                for (auto& lidar_publisher : vehicle_name_ptr_pair.second->lidar_pubs) {
+                    auto lidar_data = airsim_client_lidar_.getLidarData(lidar_publisher.sensor_name, vehicle_name_ptr_pair.first);
+                    sensor_msgs::PointCloud2 lidar_msg = getLidarMsgFromAirsim(lidar_data, vehicle_name_ptr_pair.first, lidar_publisher.sensor_name);
+                    lidar_publisher.publisher.publish(lidar_msg);
+                }
+            }
+        }
+    }
+    catch (rpc::rpc_error& e) {
+        std::string msg = e.get_error().as<std::string>();
+        std::cout << "Exception raised by the API, didn't get lidar response." << std::endl
+                  << msg << std::endl;
+    }
+}
+
+// https://docs.ros.org/jade/api/sensor_msgs/html/point__cloud__conversion_8h_source.html#l00066
+// look at UnrealLidarSensor.cpp UnrealLidarSensor::getPointCloud() for math
+// read this carefully https://docs.ros.org/kinetic/api/sensor_msgs/html/msg/PointCloud2.html
+sensor_msgs::PointCloud2 AirsimRosWrapper::getLidarMsgFromAirsim(const msr::airlib::LidarData& lidar_data, const std::string& vehicle_name, const std::string& sensor_name) const
+{
+    sensor_msgs::PointCloud2 lidar_msg;
+    lidar_msg.header.stamp = ros::Time(0);
+    lidar_msg.header.frame_id = vehicle_name + "/" + sensor_name;
+
+    if (lidar_data.point_cloud.size() > 3) {
+        lidar_msg.height = 1;
+        lidar_msg.width = lidar_data.point_cloud.size() / 3;
+
+        lidar_msg.fields.resize(3);
+        lidar_msg.fields[0].name = "x";
+        lidar_msg.fields[1].name = "y";
+        lidar_msg.fields[2].name = "z";
+
+        int offset = 0;
+
+        for (size_t d = 0; d < lidar_msg.fields.size(); ++d, offset += 4) {
+            lidar_msg.fields[d].offset = offset;
+            lidar_msg.fields[d].datatype = sensor_msgs::PointField::FLOAT32;
+            lidar_msg.fields[d].count = 1;
+        }
+
+        lidar_msg.is_bigendian = false;
+        lidar_msg.point_step = offset; // 4 * num fields
+        lidar_msg.row_step = lidar_msg.point_step * lidar_msg.width;
+
+        lidar_msg.is_dense = true; // todo
+        std::vector<float> data_std = lidar_data.point_cloud;
+
+        const unsigned char* bytes = reinterpret_cast<const unsigned char*>(data_std.data());
+        std::vector<unsigned char> lidar_msg_data(bytes, bytes + sizeof(float) * data_std.size());
+        lidar_msg.data = std::move(lidar_msg_data);
+    }
+    else {
+        // msg = []
+    }
+
+    return lidar_msg;
 }
 
 ros::Time AirsimRosWrapper::updateState()

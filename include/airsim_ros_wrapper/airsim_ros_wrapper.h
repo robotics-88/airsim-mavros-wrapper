@@ -13,8 +13,13 @@ Author: Erin Linebarger <erin@robotics88.com>
 
 #include <image_transport/image_transport.h>
 #include <nav_msgs/Odometry.h>
+#include <rosgraph_msgs/Clock.h>
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/Imu.h>
+#include <sensor_msgs/MagneticField.h>
 #include <sensor_msgs/NavSatFix.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/Range.h>
 #include <tf2/convert.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
@@ -28,6 +33,7 @@ Author: Erin Linebarger <erin@robotics88.com>
 #endif // !RPCLIB_MSGPACK
 #include "common/AirSimSettings.hpp"
 #include "rpc/rpc_error.h"
+#include "sensors/lidar/LidarSimpleParams.hpp"
 #include "vehicles/multirotor/api/MultirotorRpcLibClient.hpp"
 
 #include <airsim_ros_wrapper/math_common.h>
@@ -39,12 +45,14 @@ namespace airsim_ros {
  */
 class AirsimRosWrapper {
     using AirSimSettings = msr::airlib::AirSimSettings;
-    using VehicleSetting = msr::airlib::AirSimSettings::VehicleSetting;
     using CameraSetting = msr::airlib::AirSimSettings::CameraSetting;
     using CaptureSetting = msr::airlib::AirSimSettings::CaptureSetting;
     using ImageRequest = msr::airlib::ImageCaptureBase::ImageRequest;
     using ImageResponse = msr::airlib::ImageCaptureBase::ImageResponse;
     using ImageType = msr::airlib::ImageCaptureBase::ImageType;
+    using LidarSetting = msr::airlib::AirSimSettings::LidarSetting;
+    using SensorBase = msr::airlib::SensorBase;
+    using VehicleSetting = msr::airlib::AirSimSettings::VehicleSetting;
 
     public:
         AirsimRosWrapper(ros::NodeHandle& node);
@@ -64,6 +72,12 @@ class AirsimRosWrapper {
         bool is_used_img_timer_cb_queue_;
 
     private:
+        struct SensorPublisher
+        {
+            SensorBase::SensorType sensor_type;
+            std::string sensor_name;
+            ros::Publisher publisher;
+        };
         // utility struct for a SINGLE robot
         class VehicleROS
         {
@@ -76,9 +90,9 @@ class AirsimRosWrapper {
             ros::Publisher global_gps_pub;
             // ros::Publisher env_pub;
             // airsim_ros_pkgs::Environment env_msg;
-            // std::vector<SensorPublisher> sensor_pubs;
+            std::vector<SensorPublisher> sensor_pubs;
             // handle lidar seperately for max performance as data is collected on its own thread/callback
-            // std::vector<SensorPublisher> lidar_pubs;
+            std::vector<SensorPublisher> lidar_pubs;
 
             nav_msgs::Odometry curr_odom;
             sensor_msgs::NavSatFix gps_sensor_msg;
@@ -147,6 +161,10 @@ class AirsimRosWrapper {
         std::vector<ros::Publisher> cam_info_pub_vec_;
         std::vector<sensor_msgs::CameraInfo> camera_info_msg_vec_;
 
+        ros::Publisher clock_pub_;
+        rosgraph_msgs::Clock ros_clock_;
+        bool publish_clock_ = false;
+
         std::string settings_text_;
 
         bool parseAirsimSettings();
@@ -157,6 +175,7 @@ class AirsimRosWrapper {
         void setNansToZerosInPose(const VehicleSetting& vehicle_setting, CameraSetting& camera_setting) const;
         void appendStaticVehicleTf(VehicleROS* vehicle_ros, const VehicleSetting& vehicle_setting);
         void appendStaticCameraTf(VehicleROS* vehicle_ros, const std::string& camera_name, const CameraSetting& camera_setting);
+        void appendStaticLidarTf(VehicleROS* vehicle_ros, const std::string& lidar_name, const msr::airlib::LidarSimpleParams& lidar_setting);
 
         void publishVehicleState();
         void processAndPublishImgResponse(const std::vector<ImageResponse>& img_response_vec, const int img_response_idx, const std::string& vehicle_name);
@@ -174,6 +193,7 @@ class AirsimRosWrapper {
                                                         const ros::Time curr_ros_time,
                                                         const std::string frame_id);
         cv::Mat manualDecodeDepth(const ImageResponse& img_response) const;
+        sensor_msgs::PointCloud2 getLidarMsgFromAirsim(const msr::airlib::LidarData& lidar_data, const std::string& vehicle_name, const std::string& sensor_name) const;
 
 };
 
