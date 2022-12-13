@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(vehicle_launch)
+project(airsim_launch)
 
 # set this to path to AirSim root folder if you want your catkin workspace in a custom directory
 set(AIRSIM_ROOT $ENV{HOME}/src/AirSim/)

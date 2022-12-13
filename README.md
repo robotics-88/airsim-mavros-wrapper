@@ -4,4 +4,4 @@ Start Unreal, then ArduPilot, then press Play in Unreal. (TODO: Add detailed ins
 
 Next, start MAVROS:
 
-`roslaunch vehicle_launch airsim_mavros.launch`
+`roslaunch airsim_launch airsim_mavros.launch`

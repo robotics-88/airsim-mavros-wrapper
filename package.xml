@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>vehicle_launch</name>
+  <name>airsim_launch</name>
   <version>1.0.0</version>
-  <description>The vehicle_launch package</description>
+  <description>The airsim_launch package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
