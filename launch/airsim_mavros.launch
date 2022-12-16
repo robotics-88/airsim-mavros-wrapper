@@ -12,7 +12,7 @@
 	<arg name="respawn_mavros" default="false" />
 
 	<include file="$(find mavros)/launch/node.launch">
-		<arg name="pluginlists_yaml" value="$(find vehicle_launch)/config/pluginlists.yaml" />
+		<arg name="pluginlists_yaml" value="$(find airsim_launch)/config/pluginlists.yaml" />
 		<arg name="config_yaml" value="$(find mavros)/launch/apm_config.yaml" />
 
 		<arg name="fcu_url" value="$(arg fcu_url)" />

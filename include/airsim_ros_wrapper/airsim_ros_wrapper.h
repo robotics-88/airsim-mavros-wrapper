@@ -179,6 +179,7 @@ class AirsimRosWrapper {
 
         void publishVehicleState();
         void processAndPublishImgResponse(const std::vector<ImageResponse>& img_response_vec, const int img_response_idx, const std::string& vehicle_name);
+        void publishCameraTf(const ImageResponse& img_response, const ros::Time& ros_time, const std::string& frame_id, const std::string& child_frame_id);
 
         ros::Time airsimTimestampToRos(const msr::airlib::TTimePoint& stamp) const;
         ros::Time chronoTimestampToRos(const std::chrono::system_clock::time_point& stamp) const;

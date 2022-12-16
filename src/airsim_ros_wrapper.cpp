@@ -76,8 +76,6 @@ void AirsimRosWrapper::initializeAirsim()
         airsim_client_images_.confirmConnection();
         airsim_client_lidar_.confirmConnection();
 
-        ROS_INFO("in airsim init, veh name map size %d", vehicle_name_ptr_map_.size());
-
         for (const auto& vehicle_name_ptr_pair : vehicle_name_ptr_map_) {
             airsim_client_->enableApiControl(true, vehicle_name_ptr_pair.first); // todo expose as rosservice?
             airsim_client_->armDisarm(true, vehicle_name_ptr_pair.first); // todo exposes as rosservice?
@@ -121,7 +119,6 @@ void AirsimRosWrapper::createRosPubsFromSettingsJson() {
     size_t lidar_cnt = 0;
 
     image_transport::ImageTransport image_transporter(private_nh_);
-    ROS_INFO("in create ros pubs from settings, AS singleton veh size: %d", AirSimSettings::singleton().vehicles.size());
 
     // iterate over std::map<std::string, std::unique_ptr<VehicleSetting>> vehicles;
     for (const auto& curr_vehicle_elem : AirSimSettings::singleton().vehicles) {
@@ -485,7 +482,7 @@ void AirsimRosWrapper::imgResponseTimerCallback(const ros::TimerEvent& event)
     try {
         int image_response_idx = 0;
         for (const auto& airsim_img_request_vehicle_name_pair : airsim_img_request_vehicle_name_pair_vec_) {
-            const std::vector<ImageResponse>& img_response = airsim_client_images_.simGetImages(airsim_img_request_vehicle_name_pair.first, airsim_img_request_vehicle_name_pair.second, true);
+            const std::vector<ImageResponse>& img_response = airsim_client_images_.simGetImages(airsim_img_request_vehicle_name_pair.first, airsim_img_request_vehicle_name_pair.second);
 
             if (img_response.size() == airsim_img_request_vehicle_name_pair.first.size()) {
                 processAndPublishImgResponse(img_response, image_response_idx, airsim_img_request_vehicle_name_pair.second);
@@ -719,15 +716,16 @@ cv::Mat AirsimRosWrapper::manualDecodeDepth(const ImageResponse& img_response) c
 
 void AirsimRosWrapper::processAndPublishImgResponse(const std::vector<ImageResponse>& img_response_vec, const int img_response_idx, const std::string& vehicle_name)
 {
-    ROS_INFO("entered proc and pub img");
     // todo add option to use airsim time (image_response.TTimePoint) like Gazebo /use_sim_time param
     ros::Time curr_ros_time = ros::Time(0);
     int img_response_idx_internal = img_response_idx;
 
+    // ROS_WARN("entered proc and pub img with img resp vc len %d", img_response_vec.size());
+
     for (const auto& curr_img_response : img_response_vec) {
         // todo publishing a tf for each capture type seems stupid. but it foolproofs us against render thread's async stuff, I hope.
         // Ideally, we should loop over cameras and then captures, and publish only one tf.
-        // publish_camera_tf(curr_img_response, curr_ros_time, vehicle_name, curr_img_response.camera_name);
+        // publishCameraTf(curr_img_response, curr_ros_time, vehicle_name, curr_img_response.camera_name);
 
         // todo simGetCameraInfo is wrong + also it's only for image type -1.
         // msr::airlib::CameraInfo camera_info = airsim_client_.simGetCameraInfo(curr_img_response.camera_name);
@@ -739,18 +737,61 @@ void AirsimRosWrapper::processAndPublishImgResponse(const std::vector<ImageRespo
 
         // DepthPlanar / DepthPerspective / DepthVis / DisparityNormalized
         if (curr_img_response.pixels_as_float) {
+            // ROS_INFO("pub depth, cam name %s", curr_img_response.camera_name.c_str());
             image_pub_vec_[img_response_idx_internal].publish(getDepthImgMsgFromResponse(curr_img_response,
                                                                                               curr_ros_time,
                                                                                               curr_img_response.camera_name + "_optical"));
         }
         // Scene / Segmentation / SurfaceNormals / Infrared
         else {
+            // ROS_INFO("pub scene, cam name %s", curr_img_response.camera_name.c_str());
             image_pub_vec_[img_response_idx_internal].publish(getImgMsgFromResponse(curr_img_response,
                                                                                         curr_ros_time,
                                                                                         curr_img_response.camera_name + "_optical"));
         }
         img_response_idx_internal++;
     }
+}
+
+// publish camera transforms
+// camera poses are obtained from airsim's client API which are in (local) NED frame.
+// We first do a change of basis to camera optical frame (Z forward, X right, Y down)
+void AirsimRosWrapper::publishCameraTf(const ImageResponse& img_response, const ros::Time& ros_time, const std::string& frame_id, const std::string& child_frame_id)
+{
+    geometry_msgs::TransformStamped cam_tf_body_msg;
+    cam_tf_body_msg.header.stamp = airsimTimestampToRos(img_response.time_stamp);
+    cam_tf_body_msg.header.frame_id = frame_id;
+    cam_tf_body_msg.child_frame_id = child_frame_id + "_body";
+    cam_tf_body_msg.transform.translation.x = img_response.camera_position.x();
+    cam_tf_body_msg.transform.translation.y = img_response.camera_position.y();
+    cam_tf_body_msg.transform.translation.z = img_response.camera_position.z();
+    cam_tf_body_msg.transform.rotation.x = img_response.camera_orientation.x();
+    cam_tf_body_msg.transform.rotation.y = img_response.camera_orientation.y();
+    cam_tf_body_msg.transform.rotation.z = img_response.camera_orientation.z();
+    cam_tf_body_msg.transform.rotation.w = img_response.camera_orientation.w();
+
+    geometry_msgs::TransformStamped cam_tf_optical_msg;
+    cam_tf_optical_msg.header.stamp = airsimTimestampToRos(img_response.time_stamp);
+    cam_tf_optical_msg.header.frame_id = frame_id;
+    cam_tf_optical_msg.child_frame_id = child_frame_id + "_optical";
+    cam_tf_optical_msg.transform.translation.x = cam_tf_body_msg.transform.translation.x;
+    cam_tf_optical_msg.transform.translation.y = cam_tf_body_msg.transform.translation.y;
+    cam_tf_optical_msg.transform.translation.z = cam_tf_body_msg.transform.translation.z;
+
+    tf2::Quaternion quat_cam_body;
+    tf2::Quaternion quat_cam_optical;
+    tf2::convert(cam_tf_body_msg.transform.rotation, quat_cam_body);
+    tf2::Matrix3x3 mat_cam_body(quat_cam_body);
+    // tf2::Matrix3x3 mat_cam_optical = matrix_cam_body_to_optical_ * mat_cam_body * matrix_cam_body_to_optical_inverse_;
+    // tf2::Matrix3x3 mat_cam_optical = matrix_cam_body_to_optical_ * mat_cam_body;
+    tf2::Matrix3x3 mat_cam_optical;
+    mat_cam_optical.setValue(mat_cam_body.getColumn(1).getX(), mat_cam_body.getColumn(2).getX(), mat_cam_body.getColumn(0).getX(), mat_cam_body.getColumn(1).getY(), mat_cam_body.getColumn(2).getY(), mat_cam_body.getColumn(0).getY(), mat_cam_body.getColumn(1).getZ(), mat_cam_body.getColumn(2).getZ(), mat_cam_body.getColumn(0).getZ());
+    mat_cam_optical.getRotation(quat_cam_optical);
+    quat_cam_optical.normalize();
+    tf2::convert(quat_cam_optical, cam_tf_optical_msg.transform.rotation);
+
+    tf_broadcaster_.sendTransform(cam_tf_body_msg);
+    tf_broadcaster_.sendTransform(cam_tf_optical_msg);
 }
 
 ros::Time AirsimRosWrapper::airsimTimestampToRos(const msr::airlib::TTimePoint& stamp) const
