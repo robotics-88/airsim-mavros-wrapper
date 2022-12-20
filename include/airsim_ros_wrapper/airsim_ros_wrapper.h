@@ -66,6 +66,9 @@ class AirsimRosWrapper {
         void droneStateTimerCallback(const ros::TimerEvent& event); // update drone state from airsim_client_ every nth sec
         void lidarTimerCallback(const ros::TimerEvent& event);
 
+        // MAVROS callbacks
+        void odomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg);
+
         ros::Time updateState();
 
         bool is_used_lidar_timer_cb_queue_;
@@ -136,6 +139,7 @@ class AirsimRosWrapper {
         std::string odom_frame_id_;
         std::string world_frame_id_;
         std::string map_frame_id_;
+        std::string vehicle_frame_id_;
         tf2_ros::TransformBroadcaster tf_broadcaster_;
         tf2_ros::StaticTransformBroadcaster static_tf_pub_;
 
@@ -155,6 +159,10 @@ class AirsimRosWrapper {
         ros::CallbackQueue img_timer_cb_queue_;
         ros::CallbackQueue lidar_timer_cb_queue_;
 
+        // MAVROS subscribers
+        ros::Subscriber odom_subscriber_;
+        nav_msgs::Odometry latest_odom_;
+
         typedef std::pair<std::vector<ImageRequest>, std::string> airsim_img_request_vehicle_name_pair;
         std::vector<airsim_img_request_vehicle_name_pair> airsim_img_request_vehicle_name_pair_vec_;
         std::vector<image_transport::Publisher> image_pub_vec_;
@@ -173,11 +181,15 @@ class AirsimRosWrapper {
         void createRosPubsFromSettingsJson();
         void setNansToZerosInPose(VehicleSetting& vehicle_setting) const;
         void setNansToZerosInPose(const VehicleSetting& vehicle_setting, CameraSetting& camera_setting) const;
-        void appendStaticVehicleTf(VehicleROS* vehicle_ros, const VehicleSetting& vehicle_setting);
+        void appendStaticMap2WorldTf(const VehicleSetting& vehicle_setting);
         void appendStaticCameraTf(VehicleROS* vehicle_ros, const std::string& camera_name, const CameraSetting& camera_setting);
         void appendStaticLidarTf(VehicleROS* vehicle_ros, const std::string& lidar_name, const msr::airlib::LidarSimpleParams& lidar_setting);
 
         void publishVehicleState();
+        nav_msgs::Odometry getOdomMsgFromMultirotorState(const msr::airlib::MultirotorState& drone_state) const;
+        void updateAndPublishStaticTransforms(VehicleROS* vehicle_ros);
+        void publishMapTf();
+        void publishOdomTf(const nav_msgs::Odometry& odom_msg);
         void processAndPublishImgResponse(const std::vector<ImageResponse>& img_response_vec, const int img_response_idx, const std::string& vehicle_name);
         void publishCameraTf(const ImageResponse& img_response, const ros::Time& ros_time, const std::string& frame_id, const std::string& child_frame_id);
 
