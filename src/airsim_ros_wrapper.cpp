@@ -643,7 +643,8 @@ void AirsimRosWrapper::publishOdomTf(const nav_msgs::Odometry& odom_msg)
     //shd be odom to base link
     geometry_msgs::TransformStamped odom_tf;
     // TODO: why does MAVROS odom have map to odom instead of odom to base_link? mapping still works but verify all tf frames correct later
-    odom_tf.header = odom_frame_id_;// odom_msg.header;
+    odom_tf.header.frame_id = odom_frame_id_;// odom_msg.header;
+    odom_tf.header.stamp = odom_msg.header.stamp;
     odom_tf.child_frame_id = vehicle_frame_id_;// odom_msg.child_frame_id;
     odom_tf.transform.translation.x = odom_msg.pose.pose.position.x;
     odom_tf.transform.translation.y = odom_msg.pose.pose.position.y;
