@@ -190,7 +190,7 @@ class AirsimRosWrapper {
 
         void publishVehicleState();
         // nav_msgs::Odometry getOdomMsgFromMavros() const;
-        void updateAndPublishStaticTransforms(VehicleROS* vehicle_ros);
+        void publishStaticTransforms(VehicleROS* vehicle_ros);
         void publishMapTf();
         void publishOdomTf(const nav_msgs::Odometry& odom_msg);
         void processAndPublishImgResponse(const std::vector<ImageResponse>& img_response_vec, const int img_response_idx, const std::string& vehicle_name);

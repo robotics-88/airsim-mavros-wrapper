@@ -7,6 +7,7 @@ Panels:
         - /Global Options1
         - /Status1
         - /TF1/Frames1
+        - /Frontiers1/Status1
       Splitter Ratio: 0.5
     Tree Height: 677
   - Class: rviz/Selection
@@ -124,17 +125,14 @@ Visualization Manager:
               base_link_frd:
                 {}
               front_center_custom_body:
-                {}
-              front_center_custom_optical:
-                {}
+                front_center_custom_optical:
+                  {}
               front_left_custom_body:
-                {}
-              front_left_custom_optical:
-                {}
+                front_left_custom_optical:
+                  {}
               front_right_custom_body:
-                {}
-              front_right_custom_optical:
-                {}
+                front_right_custom_optical:
+                  {}
             odom_ned:
               {}
       Update Interval: 0
@@ -151,9 +149,9 @@ Visualization Manager:
       Value: true
     - Class: octomap_rviz_plugin/ColorOccupancyGrid
       Enabled: true
-      Max. Height Display: inf
+      Max. Height Display: 3.4028234663852886e+38
       Max. Octree Depth: 16
-      Min. Height Display: -inf
+      Min. Height Display: -3.4028234663852886e+38
       Name: 3d-map
       Octomap Topic: /octomap_full
       Queue Size: 5
@@ -161,6 +159,14 @@ Visualization Manager:
       Voxel Alpha: 1
       Voxel Coloring: Z-Axis
       Voxel Rendering: Occupied Voxels
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /explore/frontiers
+      Name: Frontiers
+      Namespaces:
+        frontiers: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -189,7 +195,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 19.810789108276367
+      Distance: 28.5744571685791
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -197,17 +203,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 2.7811119556427
-        Y: 20.759029388427734
-        Z: 2.7230563163757324
+        X: 0.24625343084335327
+        Y: 9.717196464538574
+        Z: 5.414270877838135
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.11039819568395615
+      Pitch: 0.38039788603782654
       Target Frame: <Fixed Frame>
-      Yaw: 2.160393238067627
+      Yaw: 3.0753960609436035
     Saved: ~
 Window Geometry:
   Depth:

@@ -251,6 +251,7 @@ void AirsimRosWrapper::createRosPubsFromSettingsJson() {
         std::partition_copy(sensors.begin(), sensors.end(), vehicle_ros->lidar_pubs.begin(), vehicle_ros->sensor_pubs.begin(), isLidar);
 
         vehicle_name_ptr_map_.emplace(curr_vehicle_name, std::move(vehicle_ros)); // allows fast lookup in command callbacks in case of a lot of drones
+        // publishStaticTransforms(vehicle_ros.get()); // TODO I really think this should go here, or somewhere that it doesnt get in a loop, they're not updated. But here doesn't work. Figure out later.
     }
 
     if (publish_clock_) {
@@ -605,12 +606,11 @@ void AirsimRosWrapper::publishVehicleState()
         // vehicle_ros->global_gps_pub.publish(vehicle_ros->gps_sensor_msg);
 
         // Most vehicle data published through MAVROS
-
-        updateAndPublishStaticTransforms(vehicle_ros.get());
+        publishStaticTransforms(vehicle_ros.get());
     }
 }
 
-void AirsimRosWrapper::updateAndPublishStaticTransforms(VehicleROS* vehicle_ros)
+void AirsimRosWrapper::publishStaticTransforms(VehicleROS* vehicle_ros)
 {
     if (vehicle_ros && !vehicle_ros->static_tf_msg_vec.empty()) {
         for (auto& static_tf_msg : vehicle_ros->static_tf_msg_vec) {
