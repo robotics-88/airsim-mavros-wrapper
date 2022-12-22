@@ -68,6 +68,7 @@ class AirsimRosWrapper {
 
         // MAVROS callbacks
         void odomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg);
+        void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr &gps_msg);
 
         ros::Time updateState();
 
@@ -97,7 +98,7 @@ class AirsimRosWrapper {
             // handle lidar seperately for max performance as data is collected on its own thread/callback
             std::vector<SensorPublisher> lidar_pubs;
 
-            nav_msgs::Odometry curr_odom;
+            // nav_msgs::Odometry curr_odom;
             sensor_msgs::NavSatFix gps_sensor_msg;
 
             std::vector<geometry_msgs::TransformStamped> static_tf_msg_vec;
@@ -110,25 +111,25 @@ class AirsimRosWrapper {
             // std::string mode_;
         };
 
-        class MultiRotorROS : public VehicleROS
-        {
-        public:
-            /// State
-            msr::airlib::MultirotorState curr_drone_state;
-            // bool in_air_; // todo change to "status" and keep track of this
+        // class MultiRotorROS : public VehicleROS
+        // {
+        // public:
+        //     /// State
+        //     // msr::airlib::MultirotorState curr_drone_state;
+        //     // bool in_air_; // todo change to "status" and keep track of this
 
-            ros::Subscriber vel_cmd_body_frame_sub;
-            ros::Subscriber vel_cmd_world_frame_sub;
+        //     // ros::Subscriber vel_cmd_body_frame_sub;
+        //     // ros::Subscriber vel_cmd_world_frame_sub;
 
-            ros::ServiceServer takeoff_srvr;
-            ros::ServiceServer land_srvr;
+        //     // ros::ServiceServer takeoff_srvr;
+        //     // ros::ServiceServer land_srvr;
 
-            // bool has_vel_cmd;
-            // VelCmd vel_cmd;
+        //     // bool has_vel_cmd;
+        //     // VelCmd vel_cmd;
 
-            /// Status
-            // bool in_air_; // todo change to "status" and keep track of this
-        };
+        //     /// Status
+        //     // bool in_air_; // todo change to "status" and keep track of this
+        // };
 
         ros::NodeHandle private_nh_;
         ros::NodeHandle nh_;
@@ -162,6 +163,8 @@ class AirsimRosWrapper {
         // MAVROS subscribers
         ros::Subscriber odom_subscriber_;
         nav_msgs::Odometry latest_odom_;
+        ros::Subscriber gps_subscriber_;
+        sensor_msgs::NavSatFix latest_gps_;
 
         typedef std::pair<std::vector<ImageRequest>, std::string> airsim_img_request_vehicle_name_pair;
         std::vector<airsim_img_request_vehicle_name_pair> airsim_img_request_vehicle_name_pair_vec_;
@@ -186,7 +189,7 @@ class AirsimRosWrapper {
         void appendStaticLidarTf(VehicleROS* vehicle_ros, const std::string& lidar_name, const msr::airlib::LidarSimpleParams& lidar_setting);
 
         void publishVehicleState();
-        nav_msgs::Odometry getOdomMsgFromMultirotorState(const msr::airlib::MultirotorState& drone_state) const;
+        // nav_msgs::Odometry getOdomMsgFromMavros() const;
         void updateAndPublishStaticTransforms(VehicleROS* vehicle_ros);
         void publishMapTf();
         void publishOdomTf(const nav_msgs::Odometry& odom_msg);
@@ -195,7 +198,7 @@ class AirsimRosWrapper {
 
         ros::Time airsimTimestampToRos(const msr::airlib::TTimePoint& stamp) const;
         ros::Time chronoTimestampToRos(const std::chrono::system_clock::time_point& stamp) const;
-        sensor_msgs::NavSatFix getGpsSensorMsgFromAirsimGeopoint(const msr::airlib::GeoPoint& geo_point) const;
+        sensor_msgs::NavSatFix getGpsSensorMsgFromMavros() const;
         sensor_msgs::CameraInfo generateCamInfo(const std::string& camera_name,
                                                 const CameraSetting& camera_setting,
                                                 const CaptureSetting& capture_setting) const;

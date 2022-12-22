@@ -5,6 +5,7 @@ Author: Erin Linebarger <erin@robotics88.com>
 
 #include "airsim_ros_wrapper/airsim_ros_wrapper.h"
 
+#include <math.h>
 
 namespace airsim_ros
 {
@@ -107,6 +108,7 @@ void AirsimRosWrapper::initializeRos()
 
     // ros subs
     odom_subscriber_ = nh_.subscribe<nav_msgs::Odometry>("/mavros/local_position/odom", 10, &AirsimRosWrapper::odomCallback, this);
+    gps_subscriber_ = nh_.subscribe<sensor_msgs::NavSatFix>("/mavros/global_position/global", 10, &AirsimRosWrapper::gpsCallback, this);
 
     createRosPubsFromSettingsJson();
     airsim_control_update_timer_ = private_nh_.createTimer(ros::Duration(update_airsim_control_every_n_sec), &AirsimRosWrapper::droneStateTimerCallback, this);
@@ -131,7 +133,7 @@ void AirsimRosWrapper::createRosPubsFromSettingsJson() {
 
         setNansToZerosInPose(*vehicle_setting);
 
-        std::unique_ptr<VehicleROS> vehicle_ros = std::unique_ptr<MultiRotorROS>(new MultiRotorROS());
+        std::unique_ptr<VehicleROS> vehicle_ros = std::unique_ptr<VehicleROS>(new VehicleROS());
 
         vehicle_ros->odom_frame_id = odom_frame_id_;
         vehicle_ros->vehicle_name = curr_vehicle_name;
@@ -354,16 +356,21 @@ void AirsimRosWrapper::appendStaticCameraTf(VehicleROS* vehicle_ros, const std::
     static_cam_tf_body_msg.transform.rotation.z = quat.z();
     static_cam_tf_body_msg.transform.rotation.w = quat.w();
 
-    geometry_msgs::TransformStamped static_cam_tf_optical_msg = static_cam_tf_body_msg;
+    // Optical frame is defined w.r.t. camera body: z forward, x,y are image convention (x right, y down)
+    geometry_msgs::TransformStamped static_cam_tf_optical_msg;// = static_cam_tf_body_msg;
+    static_cam_tf_optical_msg.header.frame_id = static_cam_tf_body_msg.child_frame_id;
     static_cam_tf_optical_msg.child_frame_id = camera_name + "_optical";
+    // Same origin
+    static_cam_tf_optical_msg.transform.translation.x = 0.0;
+    static_cam_tf_optical_msg.transform.translation.y = 0.0;
+    static_cam_tf_optical_msg.transform.translation.z = 0.0;
 
-    tf2::Quaternion quat_cam_body;
-    tf2::Quaternion quat_cam_optical;
-    tf2::convert(static_cam_tf_body_msg.transform.rotation, quat_cam_body);
-    tf2::Matrix3x3 mat_cam_body(quat_cam_body);
-    tf2::Matrix3x3 mat_cam_optical;
-    mat_cam_optical.setValue(mat_cam_body.getColumn(1).getX(), mat_cam_body.getColumn(2).getX(), mat_cam_body.getColumn(0).getX(), mat_cam_body.getColumn(1).getY(), mat_cam_body.getColumn(2).getY(), mat_cam_body.getColumn(0).getY(), mat_cam_body.getColumn(1).getZ(), mat_cam_body.getColumn(2).getZ(), mat_cam_body.getColumn(0).getZ());
-    mat_cam_optical.getRotation(quat_cam_optical);
+    // Visualize this way: First rotate by -Pi/2 around z-axis, then by same around x-axis
+    tf2::Quaternion rotate_xaxis, rotate_zaxis;
+    double rotate_angle = -0.5 * M_PI;
+    rotate_zaxis.setRPY(0.0, 0.0, rotate_angle);
+    rotate_xaxis.setRPY(rotate_angle, 0.0, 0.0);
+    tf2::Quaternion quat_cam_optical = rotate_zaxis * rotate_xaxis;
     quat_cam_optical.normalize();
     tf2::convert(quat_cam_optical, static_cam_tf_optical_msg.transform.rotation);
 
@@ -538,24 +545,24 @@ ros::Time AirsimRosWrapper::updateState()
         auto& vehicle_ros = vehicle_name_ptr_pair.second;
 
         // vehicle environment, we can get ambient temperature here and other truths
-        auto env_data = airsim_client_->simGetGroundTruthEnvironment(vehicle_ros->vehicle_name);
+        // auto env_data = airsim_client_->simGetGroundTruthEnvironment(vehicle_ros->vehicle_name);
 
-        auto drone = static_cast<MultiRotorROS*>(vehicle_ros.get());
-        drone->curr_drone_state = airsim_client_->getMultirotorState(vehicle_ros->vehicle_name);
+        // auto drone = static_cast<MultiRotorROS*>(vehicle_ros.get());
+        // drone->curr_drone_state = airsim_client_->getMultirotorState(vehicle_ros->vehicle_name);
 
-        vehicle_time = airsimTimestampToRos(drone->curr_drone_state.timestamp);
-        // ROS_INFO("in updatestate, time is %d, and ros time %d", vehicle_time.toSec(), curr_ros_time.toSec());
-        if (!got_sim_time) {
-            curr_ros_time = vehicle_time;
-            got_sim_time = true;
-        }
+        // vehicle_time = airsimTimestampToRos(drone->curr_drone_state.timestamp);
+        // // ROS_INFO("in updatestate, time is %d, and ros time %d", vehicle_time.toSec(), curr_ros_time.toSec());
+        // if (!got_sim_time) {
+        //     curr_ros_time = vehicle_time;
+        //     got_sim_time = true;
+        // }
 
-        vehicle_ros->gps_sensor_msg = getGpsSensorMsgFromAirsimGeopoint(drone->curr_drone_state.gps_location);
-        vehicle_ros->gps_sensor_msg.header.stamp = vehicle_time;
+        vehicle_ros->gps_sensor_msg = getGpsSensorMsgFromMavros();
+        vehicle_ros->gps_sensor_msg.header.stamp = curr_ros_time; //vehicle_time;
 
-        vehicle_ros->curr_odom = getOdomMsgFromMultirotorState(drone->curr_drone_state);
+        // vehicle_ros->curr_odom = getOdomMsgFromMavros();
 
-        vehicle_ros->stamp = vehicle_time;
+        vehicle_ros->stamp = curr_ros_time;// vehicle_time;
 
         // airsim_ros_pkgs::Environment env_msg = get_environment_msg_from_airsim(env_data);
         // env_msg.header.frame_id = vehicle_ros->vehicle_name;
@@ -563,9 +570,9 @@ ros::Time AirsimRosWrapper::updateState()
         // vehicle_ros->env_msg = env_msg;
 
         // convert airsim drone state to ROS msgs
-        vehicle_ros->curr_odom.header.frame_id = odom_frame_id_;
-        vehicle_ros->curr_odom.child_frame_id = vehicle_frame_id_;
-        vehicle_ros->curr_odom.header.stamp = vehicle_time;
+        // vehicle_ros->curr_odom.header.frame_id = odom_frame_id_;
+        // vehicle_ros->curr_odom.child_frame_id = vehicle_frame_id_;
+        // vehicle_ros->curr_odom.header.stamp = curr_ros_time;// vehicle_time;
     }
 
     return curr_ros_time;
@@ -575,12 +582,9 @@ void AirsimRosWrapper::odomCallback(const nav_msgs::Odometry::ConstPtr &odom_msg
     latest_odom_ = *odom_msg;
 }
 
-nav_msgs::Odometry AirsimRosWrapper::getOdomMsgFromMultirotorState(const msr::airlib::MultirotorState& drone_state) const
-{
-    nav_msgs::Odometry odom_msg = latest_odom_;
-
-    return odom_msg;
-}
+// nav_msgs::Odometry AirsimRosWrapper::getOdomMsgFromMavros() const {
+//     return latest_odom_;
+// }
 
 
 void AirsimRosWrapper::publishVehicleState()
@@ -592,8 +596,9 @@ void AirsimRosWrapper::publishVehicleState()
         // vehicle_ros->env_pub.publish(vehicle_ros->env_msg);
 
         // odom and transforms
-        vehicle_ros->odom_local_pub.publish(vehicle_ros->curr_odom);
-        publishOdomTf(vehicle_ros->curr_odom);
+        nav_msgs::Odometry odom = latest_odom_;
+        vehicle_ros->odom_local_pub.publish(odom);
+        publishOdomTf(odom);
         publishMapTf();
 
         // ground truth GPS position from sim/HITL
@@ -637,8 +642,9 @@ void AirsimRosWrapper::publishOdomTf(const nav_msgs::Odometry& odom_msg)
 {
     //shd be odom to base link
     geometry_msgs::TransformStamped odom_tf;
-    odom_tf.header = odom_msg.header;
-    odom_tf.child_frame_id = odom_msg.child_frame_id;
+    // TODO: why does MAVROS odom have map to odom instead of odom to base_link? mapping still works but verify all tf frames correct later
+    odom_tf.header = odom_frame_id_;// odom_msg.header;
+    odom_tf.child_frame_id = vehicle_frame_id_;// odom_msg.child_frame_id;
     odom_tf.transform.translation.x = odom_msg.pose.pose.position.x;
     odom_tf.transform.translation.y = odom_msg.pose.pose.position.y;
     odom_tf.transform.translation.z = odom_msg.pose.pose.position.z;
@@ -784,13 +790,13 @@ ros::Time AirsimRosWrapper::chronoTimestampToRos(const std::chrono::system_clock
     return cur_time;
 }
 
-sensor_msgs::NavSatFix AirsimRosWrapper::getGpsSensorMsgFromAirsimGeopoint(const msr::airlib::GeoPoint& geo_point) const
+void AirsimRosWrapper::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr &gps_msg) {
+    latest_gps_ = *gps_msg;
+}
+
+sensor_msgs::NavSatFix AirsimRosWrapper::getGpsSensorMsgFromMavros() const
 {
-    sensor_msgs::NavSatFix gps_msg;
-    gps_msg.latitude = geo_point.latitude;
-    gps_msg.longitude = geo_point.longitude;
-    gps_msg.altitude = geo_point.altitude;
-    return gps_msg;
+    return latest_gps_;
 }
 
 }

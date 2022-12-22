@@ -12,7 +12,7 @@
     <arg name="camera_info_topic"       default="/$(arg camera_name)/front_left_custom/Scene/camera_info" />
     <arg name="depth_camera_info_topic" default="/$(arg camera_name)/front_left_custom/DepthPlanar/camera_info" />
 
-    <arg name="odom_topic"              default="/$(arg camera_name)/odom" />    <!-- Odometry topic name -->
+    <arg name="odom_topic"              default="/mavros/local_position/odom" />    <!-- Odometry topic name -->
 
     <!-- Visual Odometry -->
     <!--
@@ -37,14 +37,14 @@
 
     <!-- RTABmap -->
     <node name="rtabmap" pkg="rtabmap_ros" type="rtabmap" output="log" args="$(arg args)" launch-prefix="">
-        <rosparam command="load" file="$(find vehicle_launch)/params/rtabmap.yaml" />
+        <rosparam command="load" file="$(find airsim_launch)/config/rtabmap.yaml" />
     
         <remap from="rgb/image"         to="$(arg rgb_topic)"/>
         <remap from="depth/image"       to="$(arg depth_topic)"/>
         <remap from="rgb/camera_info"   to="$(arg camera_info_topic)"/>
 
         <remap from="grid_map"          to="map" />
-        <remap from="odom"              to="$(arg odom_topic)"/>
+        <!-- <remap from="odom"              to="$(arg odom_topic)"/> -->
 
         <!-- localization mode -->
         <param     if="$(arg localization)" name="Mem/IncrementalMemory" type="string" value="false"/>
