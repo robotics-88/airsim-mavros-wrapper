@@ -111,7 +111,7 @@ void AirsimRosWrapper::initializeRos()
     gps_subscriber_ = nh_.subscribe<sensor_msgs::NavSatFix>("/mavros/global_position/global", 10, &AirsimRosWrapper::gpsCallback, this);
 
     createRosPubsFromSettingsJson();
-    airsim_control_update_timer_ = private_nh_.createTimer(ros::Duration(update_airsim_control_every_n_sec), &AirsimRosWrapper::droneStateTimerCallback, this);
+    airsim_control_update_timer_ = nh_.createTimer(ros::Duration(update_airsim_control_every_n_sec), &AirsimRosWrapper::droneStateTimerCallback, this);
 }
 
 void AirsimRosWrapper::createRosPubsFromSettingsJson() {
@@ -125,134 +125,135 @@ void AirsimRosWrapper::createRosPubsFromSettingsJson() {
     image_transport::ImageTransport image_transporter(private_nh_);
 
     // iterate over std::map<std::string, std::unique_ptr<VehicleSetting>> vehicles;
-    for (const auto& curr_vehicle_elem : AirSimSettings::singleton().vehicles) {
-        auto& vehicle_setting = curr_vehicle_elem.second;
-        auto curr_vehicle_name = curr_vehicle_elem.first;
+    const auto& curr_vehicle_elem = AirSimSettings::singleton().vehicles.begin(); // Note this means it only works for a single vehicle
+    // for (const auto& curr_vehicle_elem : AirSimSettings::singleton().vehicles) {
+    auto& vehicle_setting = curr_vehicle_elem->second;
+    auto curr_vehicle_name = curr_vehicle_elem->first;
 
-        nh_.setParam("/vehicle_name", curr_vehicle_name);
+    nh_.setParam("/vehicle_name", curr_vehicle_name);
 
-        setNansToZerosInPose(*vehicle_setting);
+    setNansToZerosInPose(*vehicle_setting);
 
-        std::unique_ptr<VehicleROS> vehicle_ros = std::unique_ptr<VehicleROS>(new VehicleROS());
+    vehicle_ros_ = std::unique_ptr<VehicleROS>(new VehicleROS());
 
-        vehicle_ros->odom_frame_id = odom_frame_id_;
-        vehicle_ros->vehicle_name = curr_vehicle_name;
+    vehicle_ros_->odom_frame_id = odom_frame_id_;
+    vehicle_ros_->vehicle_name = curr_vehicle_name;
 
-        appendStaticMap2WorldTf(*vehicle_setting);
+    appendStaticMap2WorldTf(*vehicle_setting);
 
-        vehicle_ros->odom_local_pub = private_nh_.advertise<nav_msgs::Odometry>(curr_vehicle_name + "/" + odom_frame_id_, 10);
+    vehicle_ros_->odom_local_pub = private_nh_.advertise<nav_msgs::Odometry>(curr_vehicle_name + "/" + odom_frame_id_, 10);
 
-        // vehicle_ros->env_pub = private_nh_.advertise<airsim_ros_pkgs::Environment>(curr_vehicle_name + "/environment", 10);
+    // vehicle_ros->env_pub = private_nh_.advertise<airsim_ros_pkgs::Environment>(curr_vehicle_name + "/environment", 10);
 
-        // vehicle_ros->global_gps_pub = private_nh_.advertise<sensor_msgs::NavSatFix>(curr_vehicle_name + "/global_gps", 10); // Not needed- mavros handles
+    // vehicle_ros->global_gps_pub = private_nh_.advertise<sensor_msgs::NavSatFix>(curr_vehicle_name + "/global_gps", 10); // Not needed- mavros handles
 
-            // vehicle_ros.reset_srvr = private_nh_.advertiseService(curr_vehicle_name + "/reset",&AirsimROSWrapper::reset_srv_cb, this);
+        // vehicle_ros.reset_srvr = private_nh_.advertiseService(curr_vehicle_name + "/reset",&AirsimROSWrapper::reset_srv_cb, this);
 
-        // iterate over camera map std::map<std::string, CameraSetting> .cameras;
-        for (auto& curr_camera_elem : vehicle_setting->cameras) {
-            auto& camera_setting = curr_camera_elem.second;
-            auto& curr_camera_name = curr_camera_elem.first;
+    // iterate over camera map std::map<std::string, CameraSetting> .cameras;
+    for (auto& curr_camera_elem : vehicle_setting->cameras) {
+        auto& camera_setting = curr_camera_elem.second;
+        auto& curr_camera_name = curr_camera_elem.first;
 
-            setNansToZerosInPose(*vehicle_setting, camera_setting);
-            appendStaticCameraTf(vehicle_ros.get(), curr_camera_name, camera_setting);
-            // camera_setting.gimbal
-            std::vector<ImageRequest> current_image_request_vec;
+        setNansToZerosInPose(*vehicle_setting, camera_setting);
+        appendStaticCameraTf(vehicle_ros_.get(), curr_camera_name, camera_setting);
+        // camera_setting.gimbal
+        std::vector<ImageRequest> current_image_request_vec;
 
-            // iterate over capture_setting std::map<int, CaptureSetting> capture_settings
-            for (const auto& curr_capture_elem : camera_setting.capture_settings) {
-                const auto& capture_setting = curr_capture_elem.second;
+        // iterate over capture_setting std::map<int, CaptureSetting> capture_settings
+        for (const auto& curr_capture_elem : camera_setting.capture_settings) {
+            const auto& capture_setting = curr_capture_elem.second;
 
-                // todo why does AirSimSettings::loadCaptureSettings calls AirSimSettings::initializeCaptureSettings()
-                // which initializes default capture settings for _all_ NINE msr::airlib::ImageCaptureBase::ImageType
-                if (!(std::isnan(capture_setting.fov_degrees))) {
-                    const ImageType curr_image_type = msr::airlib::Utils::toEnum<ImageType>(capture_setting.image_type);
-                    // if scene / segmentation / surface normals / infrared, get uncompressed image with pixels_as_floats = false
-                    if (curr_image_type == ImageType::Scene ||
-                        curr_image_type == ImageType::Segmentation ||
-                        curr_image_type == ImageType::SurfaceNormals ||
-                        curr_image_type == ImageType::Infrared) {
-                        current_image_request_vec.push_back(ImageRequest(curr_camera_name, curr_image_type, false, false));
-                    }
-                    // if {DepthPlanar, DepthPerspective,DepthVis, DisparityNormalized}, get float image
-                    else {
-                        current_image_request_vec.push_back(ImageRequest(curr_camera_name, curr_image_type, true));
-                    }
-
-                    const std::string cam_image_topic = curr_vehicle_name + "/" + curr_camera_name + "/" +
-                                                        image_type_int_to_string_map_.at(capture_setting.image_type);
-
-                    image_pub_vec_.push_back(image_transporter.advertise(cam_image_topic, 1));
-                    cam_info_pub_vec_.push_back(private_nh_.advertise<sensor_msgs::CameraInfo>(cam_image_topic + "/camera_info", 10));
-                    camera_info_msg_vec_.push_back(generateCamInfo(curr_camera_name, camera_setting, capture_setting));
+            // todo why does AirSimSettings::loadCaptureSettings calls AirSimSettings::initializeCaptureSettings()
+            // which initializes default capture settings for _all_ NINE msr::airlib::ImageCaptureBase::ImageType
+            if (!(std::isnan(capture_setting.fov_degrees))) {
+                const ImageType curr_image_type = msr::airlib::Utils::toEnum<ImageType>(capture_setting.image_type);
+                // if scene / segmentation / surface normals / infrared, get uncompressed image with pixels_as_floats = false
+                if (curr_image_type == ImageType::Scene ||
+                    curr_image_type == ImageType::Segmentation ||
+                    curr_image_type == ImageType::SurfaceNormals ||
+                    curr_image_type == ImageType::Infrared) {
+                    airsim_img_request_vec_.push_back(ImageRequest(curr_camera_name, curr_image_type, false, false));
                 }
-            }
-            // push back pair (vector of image captures, current vehicle name)
-            airsim_img_request_vehicle_name_pair_vec_.push_back({ current_image_request_vec, curr_vehicle_name });
-        }
+                // if {DepthPlanar, DepthPerspective,DepthVis, DisparityNormalized}, get float image
+                else {
+                    airsim_img_request_vec_.push_back(ImageRequest(curr_camera_name, curr_image_type, true));
+                }
 
-        // iterate over sensors
-        std::vector<SensorPublisher> sensors;
-        for (const auto& [sensor_name, sensor_setting] : vehicle_setting->sensors) {
-            if (sensor_setting->enabled) {
-                SensorPublisher sensor_publisher;
-                sensor_publisher.sensor_name = sensor_name;
-                sensor_publisher.sensor_type = sensor_setting->sensor_type;
-                switch (sensor_setting->sensor_type) {
-                // case SensorBase::SensorType::Barometer: {
-                //     ROS_INFO_STREAM(sensor_name << ": Barometer");
-                //     sensor_publisher.publisher = private_nh_.advertise<airsim_ros_pkgs::Altimeter>(curr_vehicle_name + "/altimeter/" + sensor_name, 10);
-                //     break;
-                // }
-                case SensorBase::SensorType::Imu: {
-                    ROS_INFO_STREAM(sensor_name << ": IMU");
-                    sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::Imu>(curr_vehicle_name + "/imu/" + sensor_name, 10);
-                    break;
-                }
-                case SensorBase::SensorType::Gps: {
-                    ROS_INFO_STREAM(sensor_name << ": GPS");
-                    sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::NavSatFix>(curr_vehicle_name + "/gps/" + sensor_name, 10);
-                    break;
-                }
-                case SensorBase::SensorType::Magnetometer: {
-                    ROS_INFO_STREAM(sensor_name << ": Magnetometer");
-                    sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::MagneticField>(curr_vehicle_name + "/magnetometer/" + sensor_name, 10);
-                    break;
-                }
-                case SensorBase::SensorType::Distance: {
-                    ROS_INFO_STREAM(sensor_name << ": Distance sensor");
-                    sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::Range>(curr_vehicle_name + "/distance/" + sensor_name, 10);
-                    break;
-                }
-                case SensorBase::SensorType::Lidar: {
-                    ROS_INFO_STREAM(sensor_name << ": Lidar");
-                    auto lidar_setting = *static_cast<LidarSetting*>(sensor_setting.get());
-                    msr::airlib::LidarSimpleParams params;
-                    params.initializeFromSettings(lidar_setting);
-                    appendStaticLidarTf(vehicle_ros.get(), sensor_name, params);
-                    sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::PointCloud2>(curr_vehicle_name + "/lidar/" + sensor_name, 10);
-                    break;
-                }
-                default: {
-                    // throw std::invalid_argument("Unexpected sensor type");
-                }
-                }
-                sensors.emplace_back(sensor_publisher);
+                const std::string cam_image_topic = curr_vehicle_name + "/" + curr_camera_name + "/" +
+                                                    image_type_int_to_string_map_.at(capture_setting.image_type);
+
+                image_pub_vec_.push_back(image_transporter.advertise(cam_image_topic, 1));
+                cam_info_pub_vec_.push_back(private_nh_.advertise<sensor_msgs::CameraInfo>(cam_image_topic + "/camera_info", 10));
+                camera_info_msg_vec_.push_back(generateCamInfo(curr_camera_name, camera_setting, capture_setting));
             }
         }
-
-        // // we want fast access to the lidar sensors for callback handling, sort them out now
-        auto isLidar = [](const SensorPublisher& pub) {
-            return pub.sensor_type == SensorBase::SensorType::Lidar;
-        };
-        size_t cnt = std::count_if(sensors.begin(), sensors.end(), isLidar);
-        lidar_cnt += cnt;
-        vehicle_ros->lidar_pubs.resize(cnt);
-        vehicle_ros->sensor_pubs.resize(sensors.size() - cnt);
-        std::partition_copy(sensors.begin(), sensors.end(), vehicle_ros->lidar_pubs.begin(), vehicle_ros->sensor_pubs.begin(), isLidar);
-
-        vehicle_name_ptr_map_.emplace(curr_vehicle_name, std::move(vehicle_ros)); // allows fast lookup in command callbacks in case of a lot of drones
-        // publishStaticTransforms(vehicle_ros.get()); // TODO I really think this should go here, or somewhere that it doesnt get in a loop, they're not updated. But here doesn't work. Figure out later.
+        // push back pair (vector of image captures, current vehicle name)
+        airsim_img_request_vehicle_name_pair_vec_.push_back({ current_image_request_vec, curr_vehicle_name });
     }
+
+    // iterate over sensors
+    std::vector<SensorPublisher> sensors;
+    for (const auto& [sensor_name, sensor_setting] : vehicle_setting->sensors) {
+        if (sensor_setting->enabled) {
+            SensorPublisher sensor_publisher;
+            sensor_publisher.sensor_name = sensor_name;
+            sensor_publisher.sensor_type = sensor_setting->sensor_type;
+            switch (sensor_setting->sensor_type) {
+            // case SensorBase::SensorType::Barometer: {
+            //     ROS_INFO_STREAM(sensor_name << ": Barometer");
+            //     sensor_publisher.publisher = private_nh_.advertise<airsim_ros_pkgs::Altimeter>(curr_vehicle_name + "/altimeter/" + sensor_name, 10);
+            //     break;
+            // }
+            case SensorBase::SensorType::Imu: {
+                ROS_INFO_STREAM(sensor_name << ": IMU");
+                sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::Imu>(curr_vehicle_name + "/imu/" + sensor_name, 10);
+                break;
+            }
+            case SensorBase::SensorType::Gps: {
+                ROS_INFO_STREAM(sensor_name << ": GPS");
+                sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::NavSatFix>(curr_vehicle_name + "/gps/" + sensor_name, 10);
+                break;
+            }
+            case SensorBase::SensorType::Magnetometer: {
+                ROS_INFO_STREAM(sensor_name << ": Magnetometer");
+                sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::MagneticField>(curr_vehicle_name + "/magnetometer/" + sensor_name, 10);
+                break;
+            }
+            case SensorBase::SensorType::Distance: {
+                ROS_INFO_STREAM(sensor_name << ": Distance sensor");
+                sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::Range>(curr_vehicle_name + "/distance/" + sensor_name, 10);
+                break;
+            }
+            case SensorBase::SensorType::Lidar: {
+                ROS_INFO_STREAM(sensor_name << ": Lidar");
+                auto lidar_setting = *static_cast<LidarSetting*>(sensor_setting.get());
+                msr::airlib::LidarSimpleParams params;
+                params.initializeFromSettings(lidar_setting);
+                appendStaticLidarTf(vehicle_ros_.get(), sensor_name, params);
+                sensor_publisher.publisher = private_nh_.advertise<sensor_msgs::PointCloud2>(curr_vehicle_name + "/lidar/" + sensor_name, 10);
+                break;
+            }
+            default: {
+                // throw std::invalid_argument("Unexpected sensor type");
+            }
+            }
+            sensors.emplace_back(sensor_publisher);
+        }
+    }
+
+    // // we want fast access to the lidar sensors for callback handling, sort them out now
+    auto isLidar = [](const SensorPublisher& pub) {
+        return pub.sensor_type == SensorBase::SensorType::Lidar;
+    };
+    size_t cnt = std::count_if(sensors.begin(), sensors.end(), isLidar);
+    lidar_cnt += cnt;
+    vehicle_ros_->lidar_pubs.resize(cnt);
+    vehicle_ros_->sensor_pubs.resize(sensors.size() - cnt);
+    std::partition_copy(sensors.begin(), sensors.end(), vehicle_ros_->lidar_pubs.begin(), vehicle_ros_->sensor_pubs.begin(), isLidar);
+
+    vehicle_name_ptr_map_.emplace(curr_vehicle_name, std::move(vehicle_ros_)); // allows fast lookup in command callbacks in case of a lot of drones
+    // publishStaticTransforms(vehicle_ros.get()); // TODO I really think this should go here, or somewhere that it doesnt get in a loop, they're not updated. But here doesn't work. Figure out later.
+    // }
 
     if (publish_clock_) {
         clock_pub_ = nh_.advertise<rosgraph_msgs::Clock>("/clock", 1);
@@ -262,7 +263,8 @@ void AirsimRosWrapper::createRosPubsFromSettingsJson() {
     if (!airsim_img_request_vehicle_name_pair_vec_.empty()) {
         double update_airsim_img_response_every_n_sec;
         private_nh_.getParam("update_airsim_img_response_every_n_sec", update_airsim_img_response_every_n_sec);
-        airsim_img_response_timer_ = private_nh_.createTimer(ros::Duration(update_airsim_img_response_every_n_sec), &AirsimRosWrapper::imgResponseTimerCallback, this);
+        ROS_INFO("starting img timer with %f", update_airsim_img_response_every_n_sec);
+        airsim_img_response_timer_ = nh_.createTimer(ros::Duration(update_airsim_img_response_every_n_sec), &AirsimRosWrapper::imgResponseTimerCallback, this);
     }
 
     // lidars update on their own callback/thread at a given rate
@@ -270,7 +272,7 @@ void AirsimRosWrapper::createRosPubsFromSettingsJson() {
         double update_lidar_every_n_sec;
         private_nh_.getParam("update_lidar_every_n_sec", update_lidar_every_n_sec);
         // private_nh_.setCallbackQueue(&lidar_timer_cb_queue_);
-        airsim_lidar_update_timer_ = private_nh_.createTimer(ros::Duration(update_lidar_every_n_sec), &AirsimRosWrapper::lidarTimerCallback, this);
+        airsim_lidar_update_timer_ = nh_.createTimer(ros::Duration(update_lidar_every_n_sec), &AirsimRosWrapper::lidarTimerCallback, this);
     }
 
     initializeAirsim();
@@ -449,14 +451,8 @@ void AirsimRosWrapper::imgResponseTimerCallback(const ros::TimerEvent& event)
 {
     try {
         int image_response_idx = 0;
-        for (const auto& airsim_img_request_vehicle_name_pair : airsim_img_request_vehicle_name_pair_vec_) {
-            const std::vector<ImageResponse>& img_response = airsim_client_images_.simGetImages(airsim_img_request_vehicle_name_pair.first, airsim_img_request_vehicle_name_pair.second);
-
-            if (img_response.size() == airsim_img_request_vehicle_name_pair.first.size()) {
-                processAndPublishImgResponse(img_response, image_response_idx, airsim_img_request_vehicle_name_pair.second);
-                image_response_idx += img_response.size();
-            }
-        }
+        const std::vector<ImageResponse>& img_response = airsim_client_images_.simGetImages(airsim_img_request_vec_);
+        processAndPublishImgResponse(img_response, image_response_idx, vehicle_ros_->vehicle_name);
     }
 
     catch (rpc::rpc_error& e) {
@@ -465,6 +461,29 @@ void AirsimRosWrapper::imgResponseTimerCallback(const ros::TimerEvent& event)
                   << msg << std::endl;
     }
 }
+
+//  void AirsimRosWrapper::getStereoAndDepthImages(const std::vector<ImageResponse>& img_response_vec) {
+//     // using namespace msr::airlib;
+
+//     // typedef VehicleCameraBase::ImageRequest ImageRequest;
+//     // typedef VehicleCameraBase::ImageResponse ImageResponse;
+//     // typedef VehicleCameraBase::ImageType ImageType;
+
+//     // get right, left and depth images. First two as png, second as float16.
+//     std::vector<ImageRequest> request = { 
+//         //png format
+//         ImageRequest("0", ImageType::Scene),
+//         //uncompressed RGB array bytes
+//         ImageRequest("1", ImageType::Scene, false, false),       
+//         //floating point uncompressed image  
+//         ImageRequest("1", ImageType::DepthPlanar, true) 
+//     };
+
+//     img_response_vec = airsim_client_images_.simGetImages(request);
+
+//     // return img_response;
+//     // do something with response which contains image data, pose, timestamp etc
+// }
 
 void AirsimRosWrapper::lidarTimerCallback(const ros::TimerEvent& event)
 {
@@ -663,7 +682,7 @@ sensor_msgs::ImagePtr AirsimRosWrapper::getImgMsgFromResponse(const ImageRespons
     sensor_msgs::ImagePtr img_msg_ptr = boost::make_shared<sensor_msgs::Image>();
     img_msg_ptr->data = img_response.image_data_uint8;
     img_msg_ptr->step = img_response.width * 3; // todo un-hardcode. image_width*num_bytes
-    img_msg_ptr->header.stamp = airsimTimestampToRos(img_response.time_stamp);
+    img_msg_ptr->header.stamp = curr_ros_time;// airsimTimestampToRos(img_response.time_stamp);
     img_msg_ptr->header.frame_id = frame_id;
     img_msg_ptr->height = img_response.height;
     img_msg_ptr->width = img_response.width;
@@ -677,10 +696,10 @@ sensor_msgs::ImagePtr AirsimRosWrapper::getDepthImgMsgFromResponse(const ImageRe
                                                                         const std::string frame_id)
 {
     // todo using img_response.image_data_float direclty as done get_img_msg_from_response() throws an error,
-    // hence the dependency on opencv and cv_bridge. however, this is an extremely fast op, so no big deal.
+    // hence the dependency on opencv and cv_bridge. however, this is an extremely fast op, so no big deal. <-- this note from microsoft original. verify with profiling later.
     cv::Mat depth_img = manualDecodeDepth(img_response);
     sensor_msgs::ImagePtr depth_img_msg = cv_bridge::CvImage(std_msgs::Header(), "32FC1", depth_img).toImageMsg();
-    depth_img_msg->header.stamp = airsimTimestampToRos(img_response.time_stamp);
+    depth_img_msg->header.stamp = curr_ros_time;// airsimTimestampToRos(img_response.time_stamp);
     depth_img_msg->header.frame_id = frame_id;
     return depth_img_msg;
 }
@@ -700,31 +719,24 @@ void AirsimRosWrapper::processAndPublishImgResponse(const std::vector<ImageRespo
 {
     // todo add option to use airsim time (image_response.TTimePoint) like Gazebo /use_sim_time param
     ros::Time curr_ros_time = ros::Time::now();
-    int img_response_idx_internal = img_response_idx;
+    int img_response_idx_internal = 0;
 
     for (const auto& curr_img_response : img_response_vec) {
-        // todo publishing a tf for each capture type seems stupid. but it foolproofs us against render thread's async stuff, I hope.
-        // Ideally, we should loop over cameras and then captures, and publish only one tf.
-        // publishCameraTf(curr_img_response, curr_ros_time, vehicle_name, curr_img_response.camera_name);
-
-        // todo simGetCameraInfo is wrong + also it's only for image type -1.
-        // msr::airlib::CameraInfo camera_info = airsim_client_.simGetCameraInfo(curr_img_response.camera_name);
-
         // update timestamp of saved cam info msgs
-
-        camera_info_msg_vec_[img_response_idx_internal].header.stamp = airsimTimestampToRos(curr_img_response.time_stamp);
+        ros::Time img_time_stamp = airsimTimestampToRos(curr_img_response.time_stamp);
+        camera_info_msg_vec_[img_response_idx_internal].header.stamp = img_time_stamp;
         cam_info_pub_vec_[img_response_idx_internal].publish(camera_info_msg_vec_[img_response_idx_internal]);
 
         // DepthPlanar / DepthPerspective / DepthVis / DisparityNormalized
         if (curr_img_response.pixels_as_float) {
             image_pub_vec_[img_response_idx_internal].publish(getDepthImgMsgFromResponse(curr_img_response,
-                                                                                              curr_ros_time,
+                                                                                              img_time_stamp,
                                                                                               curr_img_response.camera_name + "_optical"));
         }
         // Scene / Segmentation / SurfaceNormals / Infrared
         else {
             image_pub_vec_[img_response_idx_internal].publish(getImgMsgFromResponse(curr_img_response,
-                                                                                        curr_ros_time,
+                                                                                        img_time_stamp,
                                                                                         curr_img_response.camera_name + "_optical"));
         }
         img_response_idx_internal++;

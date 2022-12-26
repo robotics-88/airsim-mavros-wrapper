@@ -150,6 +150,7 @@ class AirsimRosWrapper {
         msr::airlib::MultirotorRpcLibClient airsim_client_lidar_;
 
         std::unordered_map<std::string, std::unique_ptr<VehicleROS>> vehicle_name_ptr_map_;
+        std::unique_ptr<VehicleROS> vehicle_ros_;
         static const std::unordered_map<int, std::string> image_type_int_to_string_map_;
 
         /// ROS Timers.
@@ -168,6 +169,7 @@ class AirsimRosWrapper {
 
         typedef std::pair<std::vector<ImageRequest>, std::string> airsim_img_request_vehicle_name_pair;
         std::vector<airsim_img_request_vehicle_name_pair> airsim_img_request_vehicle_name_pair_vec_;
+        std::vector<ImageRequest> airsim_img_request_vec_;
         std::vector<image_transport::Publisher> image_pub_vec_;
         std::vector<ros::Publisher> cam_info_pub_vec_;
         std::vector<sensor_msgs::CameraInfo> camera_info_msg_vec_;
