@@ -13,7 +13,7 @@
 
     <!-- <param name="/use_sim_time" value="true"/> -->
 
-    <node pkg="airsim_launch" type="airsim_node" respawn="false" name="airsim_ros_node" output="screen">
+    <node pkg="airsim_launch" type="airsim_node" respawn="false" name="airsim_ros_node" output="log">
         <param name="update_airsim_img_response_every_n_sec" value="$(arg image_pub_freq)" />
         <param name="update_lidar_every_n_sec" value="$(arg lidar_pub_freq)" />
         <param name="update_airsim_control_every_n_sec" value="$(arg control_pub_freq)" />
@@ -24,6 +24,8 @@
     </node>
 
     <include file="$(find airsim_launch)/launch/airsim_rtabmap.launch"/>
+    <include file="$(find airsim_launch)/launch/airsim_explore.launch"/>
+    <include file="$(find monarch)/launch/monarch.launch"/>
 
-    <node type="rviz" name="zed_rviz" pkg="rviz" args="-d $(find airsim_launch)/config/airsim_slam.rviz" />
+    <node type="rviz" name="zed_rviz" pkg="rviz" args="-d $(find airsim_launch)/config/airsim_slam.rviz" output="log"/>
 </launch>
