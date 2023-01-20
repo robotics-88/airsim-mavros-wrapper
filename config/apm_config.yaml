@@ -153,13 +153,13 @@ obstacle_distance:
 #    Check http://wiki.ros.org/mavros/Enumerations
 ##
 distance_sensor:
-  rangefinder_pub:
-    id: 0
-    frame_id: "lidar"
-    orientation: NONE # sended by FCU
-    field_of_view: 0.0  # XXX TODO
-    send_tf: false
-    sensor_position: {x:  0.0, y:  0.0, z:  -0.1}
+  # rangefinder_pub:
+    # id: 0
+    # frame_id: "base_link"
+    # orientation: NONE # sended by FCU
+    # field_of_view: 0.0  # XXX TODO
+    # send_tf: false
+    # sensor_position: {x:  0.0, y:  0.0, z:  0.0}
   rangefinder_sub:
     subscriber: true
     id: 1
