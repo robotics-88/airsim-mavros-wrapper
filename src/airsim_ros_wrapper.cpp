@@ -350,8 +350,8 @@ void AirsimRosWrapper::appendStaticCameraTf(VehicleROS* vehicle_ros, const std::
     static_cam_tf_body_msg.header.frame_id = vehicle_frame_id_;
     static_cam_tf_body_msg.child_frame_id = camera_name + "_body";
     static_cam_tf_body_msg.transform.translation.x = camera_setting.position.x();
-    static_cam_tf_body_msg.transform.translation.y = camera_setting.position.y();
-    static_cam_tf_body_msg.transform.translation.z = camera_setting.position.z();
+    static_cam_tf_body_msg.transform.translation.y = -1 * camera_setting.position.y();
+    static_cam_tf_body_msg.transform.translation.z = -1 * camera_setting.position.z();
     tf2::Quaternion quat;
     quat.setRPY(camera_setting.rotation.roll, camera_setting.rotation.pitch, camera_setting.rotation.yaw);
     static_cam_tf_body_msg.transform.rotation.x = quat.x();
