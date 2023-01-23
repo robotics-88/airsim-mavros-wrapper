@@ -5,7 +5,7 @@
     <arg name="map_frame" default="map"/>
     <arg name="world_frame" default="world"/>
 
-    <include file="$(find airsim_launch)/launch/airsim_mavros.launch"/>
+    <include file="$(find airsim_launch)/launch/airsim_ardupilot.launch"/>
 
     <arg name="image_pub_freq" default=".1"/>
     <arg name="lidar_pub_freq" default=".1"/>
