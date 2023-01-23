@@ -14,5 +14,6 @@ plugin_blacklist:
 - wheel_odometry
 - distance_sensor #include this to prevent continuous error stream message about DS sensor mapping
 
-plugin_whitelist: []
+plugin_whitelist:
 #- 'sys_*'
+- obstacle_distance
