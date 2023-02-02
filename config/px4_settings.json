@@ -1,113 +1,146 @@
 {
-    "SettingsVersion": 1.2,
-    "SimMode": "Multirotor",
-    "ClockType": "SteppableClock",
-    "Vehicles": {
-        "Copter": {
-            "VehicleType": "PX4Multirotor",
-            "UseSerial": false,
-            "LockStep": true,
-            "UseTcp": true,
-            "TcpPort": 4560,
-            "ControlPortLocal": 14540,
-            "ControlPortRemote": 14580,
-            "Sensors":{
-                "Barometer":{
-                    "SensorType": 1,
-                    "Enabled": true,
-                    "PressureFactorSigma": 0.0001825
-                },
-                "Imu": {
-                    "SensorType": 2,
-                    "Enabled": true
-                },
-                "Gps": {
-                    "SensorType": 3,
-                    "Enabled": true
-                },
-                "Lidar1": {
-                  "SensorType": 6,
-                  "Enabled": true,
-                  "NumberOfChannels": 1,
-                  "PointsPerSecond": 5000,
-                  "DrawDebugPoints": true,
-                  "RotationsPerSecond": 10,
-                  "VerticalFOVUpper": 0,
-                  "VerticalFOVLower": 0,
-                  "HorizontalFOVStart": 0,
-                  "HorizontalFOVEnd": 359,
-                  "DataFrame": "SensorLocalFrame",
-                  "ExternalController": true
-                }
-            },
-
-        "Cameras": {
-            "front_center_custom": {
-              "CaptureSettings": [
-                {
-                  "PublishToRos": 1,
-                  "ImageType": 0,
-                  "Width": 640,
-                  "Height": 480,
-                  "FOV_Degrees": 27,
-                  "DepthOfFieldFstop": 2.8,
-                  "DepthOfFieldFocalDistance": 200.0, 
-                  "DepthOfFieldFocalRegion": 200.0,
-                  "TargetGamma": 1.5
-                }
-              ],
-              "X": 0.05, "Y": 0, "Z": 0.20,
-              "Pitch": 0, "Roll": 0, "Yaw": 0
-            },
-            "front_left_custom": {
-              "CaptureSettings": [
-                {
-                  "PublishToRos": 1,
-                  "ImageType": 0,
-                  "Width": 672,
-                  "Height": 376,
-                  "FOV_Degrees": 90,
-                  "TargetGamma": 1.5
-                }, 
-                {
-                  "PublishToRos": 1,
-                  "ImageType": 1,
-                  "Width": 672,
-                  "Height": 376,
-                  "FOV_Degrees": 90,
-                  "TargetGamma": 1.5
-                }
-              ],
-              "X": 0.05, "Y": -0.06, "Z": 0.20,
-              "Pitch": 0.0, "Roll": 0.0, "Yaw": 0.0
-            },
-            "front_right_custom": {
-              "CaptureSettings": [
-                {
-                  "PublishToRos": 1,
-                  "ImageType": 0,
-                  "Width": 672,
-                  "Height": 376,
-                  "FOV_Degrees": 90,
-                  "TargetGamma": 1.5
-                }
-              ],
-              "X": 0.05, "Y": 0.06, "Z": 0.20,
-              "Pitch": 0.0, "Roll": 0.0, "Yaw": 0.0
-            }
-          },
-            "Parameters": {
-                "NAV_RCL_ACT": 0,
-                "NAV_DLL_ACT": 0,
-                "COM_OBL_ACT": 1,
-                "LPE_LAT": 47.641468,
-                "LPE_LON": -122.140165
-            }
+  "SettingsVersion": 1.2,
+  "SimMode": "Multirotor",
+  "ClockType": "SteppableClock",
+  "OriginGeopoint": {
+    "Latitude": -35.363261,
+    "Longitude": 149.165230,
+    "Altitude": 583
+  },
+  "Vehicles": {
+    "Copter": {
+      "VehicleType": "PX4Multirotor",
+      "UseSerial": false,
+      "LockStep": true,
+      "UseTcp": true,
+      "TcpPort": 4560,
+      "ControlPortLocal": 14540,
+      "ControlPortRemote": 14580,
+      "QgcHostIp": "127.0.0.1",
+      "QgcPort": 14560,
+      "Sensors": {
+        "Barometer": {
+          "SensorType": 1,
+          "Enabled": true,
+          "PressureFactorSigma": 0.0001825
+        },
+        "Imu": {
+          "SensorType": 2,
+          "Enabled": true
+        },
+        "Gps": {
+          "SensorType": 3,
+          "Enabled": true
+        },
+        "Lidar1": {
+          "SensorType": 6,
+          "Enabled": true,
+          "NumberOfChannels": 1,
+          "PointsPerSecond": 5000,
+          "DrawDebugPoints": true,
+          "RotationsPerSecond": 10,
+          "VerticalFOVUpper": 0,
+          "VerticalFOVLower": 0,
+          "HorizontalFOVStart": 0,
+          "HorizontalFOVEnd": 359,
+          "DataFrame": "SensorLocalFrame",
+          "ExternalController": true
         }
+      },
+      "Cameras": {
+        "front_center_custom": {
+          "CaptureSettings": [
+            {
+              "PublishToRos": 1,
+              "ImageType": 0,
+              "Width": 640,
+              "Height": 480,
+              "FOV_Degrees": 27,
+              "DepthOfFieldFstop": 2.8,
+              "DepthOfFieldFocalDistance": 200.0,
+              "DepthOfFieldFocalRegion": 200.0,
+              "TargetGamma": 1.5
+            }
+          ],
+          "X": 0.05,
+          "Y": 0,
+          "Z": 0.20,
+          "Pitch": 0,
+          "Roll": 0,
+          "Yaw": 0
+        },
+        "front_left_custom": {
+          "CaptureSettings": [
+            {
+              "PublishToRos": 1,
+              "ImageType": 0,
+              "Width": 672,
+              "Height": 376,
+              "FOV_Degrees": 90,
+              "TargetGamma": 1.5
+            },
+            {
+              "PublishToRos": 1,
+              "ImageType": 1,
+              "Width": 672,
+              "Height": 376,
+              "FOV_Degrees": 90,
+              "TargetGamma": 1.5
+            }
+          ],
+          "X": 0.05,
+          "Y": -0.06,
+          "Z": 0.20,
+          "Pitch": 0.0,
+          "Roll": 0.0,
+          "Yaw": 0.0
+        },
+        "front_right_custom": {
+          "CaptureSettings": [
+            {
+              "PublishToRos": 1,
+              "ImageType": 0,
+              "Width": 672,
+              "Height": 376,
+              "FOV_Degrees": 90,
+              "TargetGamma": 1.5
+            }
+          ],
+          "X": 0.05,
+          "Y": 0.06,
+          "Z": 0.20,
+          "Pitch": 0.0,
+          "Roll": 0.0,
+          "Yaw": 0.0
+        }
+      },
+      "Parameters": {
+        "NAV_RCL_ACT": 0,
+        "NAV_DLL_ACT": 0,
+        "COM_OBL_ACT": 1,
+        "LPE_LAT": -35.363261,
+        "LPE_LON": 149.165230
+      }
+    }
+  },
+  "SubWindows": [
+    {
+      "WindowID": 0,
+      "ImageType": 0,
+      "CameraName": "front_left_custom",
+      "Visible": true
     },
-    "SubWindows": [
-      {"WindowID": 0, "ImageType": 0, "CameraName": "front_left_custom", "Visible": true},
-      {"WindowID": 1, "ImageType": 0, "CameraName": "front_center_custom", "Visible": false},
-      {"WindowID": 2, "ImageType": 0, "CameraName": "front_right_custom", "Visible": true}
-    ]
+    {
+      "WindowID": 1,
+      "ImageType": 0,
+      "CameraName": "front_center_custom",
+      "Visible": false
+    },
+    {
+      "WindowID": 2,
+      "ImageType": 0,
+      "CameraName": "front_right_custom",
+      "Visible": true
+    }
+  ]
 }
