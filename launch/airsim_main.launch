@@ -13,14 +13,6 @@
 
     <!-- <param name="/use_sim_time" value="true"/> -->
 
-    <!-- <arg name="pointcloud_topics" default="[/airsim_ros_node/Copter/lidar/Lidar1]"/>
-    <node name="local_planner_node" pkg="local_planner" type="local_planner_node" output="screen" required="true" >
-      <param name="goal_x_param" value="0" />
-      <param name="goal_y_param" value="0"/>
-      <param name="goal_z_param" value="4" />
-      <rosparam param="pointcloud_topics" subst_value="True">$(arg pointcloud_topics)</rosparam>
-    </node> -->
-
     <node pkg="airsim_launch" type="airsim_node" respawn="false" name="airsim_ros_node" output="log">
         <param name="update_airsim_img_response_every_n_sec" value="$(arg image_pub_freq)" />
         <param name="update_lidar_every_n_sec" value="$(arg lidar_pub_freq)" />
@@ -29,6 +21,13 @@
         <param name="odom_frame_id" value="$(arg odom_frame)" />
         <param name="map_frame_id" value="$(arg map_frame)" />
         <param name="world_frame_id" value="$(arg world_frame)" />
+    </node>
+
+    <arg name="depth_image" default="/airsim_ros_node/Copter/front_left_custom/DepthPlanar"/>
+    <arg name="depth_info" default="/airsim_ros_node/Copter/front_left_custom/DepthPlanar/camera_info"/>
+    <node pkg="depth_image_to_mavlink" type="depth_image_to_mavlink_node" respawn="false" name="depth_image_to_mavlink" output="screen">
+        <param name="depth_image" value="$(arg depth_image)"/>
+        <param name="depth_info" value="$(arg depth_info)"/>
     </node>
 
     <include file="$(find airsim_launch)/launch/airsim_rtabmap.launch"/>

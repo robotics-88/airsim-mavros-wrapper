@@ -7,7 +7,7 @@ Panels:
         - /Global Options1
         - /Status1
         - /TF1/Frames1
-        - /LaserScan1/Status1
+        - /LaserScan1
       Splitter Ratio: 0.5
     Tree Height: 677
   - Class: rviz/Selection
@@ -188,7 +188,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.009999999776482582
+      Size (m): 0.10000000149011612
       Style: Flat Squares
       Topic: /mavros/obstacle/send
       Unreliable: false
@@ -223,7 +223,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 10.276361465454102
+      Distance: 6.309803485870361
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -231,17 +231,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -2.8435873985290527
-        Y: 0.6903306841850281
-        Z: 0.9243755340576172
+        X: 0.7094606757164001
+        Y: 10.081100463867188
+        Z: 9.83723258972168
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.835397481918335
+      Pitch: 0.7253979444503784
       Target Frame: <Fixed Frame>
-      Yaw: 4.615398406982422
+      Yaw: 5.015405654907227
     Saved: ~
 Window Geometry:
   Depth:
