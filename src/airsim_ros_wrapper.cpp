@@ -354,7 +354,6 @@ void AirsimRosWrapper::appendStaticCameraTf(VehicleROS* vehicle_ros, const std::
     static_cam_tf_body_msg.transform.translation.z = -1 * camera_setting.position.z();
     tf2::Quaternion quat;
     quat.setRPY(camera_setting.rotation.roll, camera_setting.rotation.pitch, camera_setting.rotation.yaw);
-    quat.normalize();
     static_cam_tf_body_msg.transform.rotation.x = quat.x();
     static_cam_tf_body_msg.transform.rotation.y = quat.y();
     static_cam_tf_body_msg.transform.rotation.z = quat.z();
@@ -670,13 +669,10 @@ void AirsimRosWrapper::publishOdomTf(const nav_msgs::Odometry& odom_msg)
     odom_tf.transform.translation.x = odom_msg.pose.pose.position.x;
     odom_tf.transform.translation.y = odom_msg.pose.pose.position.y;
     odom_tf.transform.translation.z = odom_msg.pose.pose.position.z;
-    tf2::Quaternion quat;
-    quat.setRPY(odom_msg.pose.pose.orientation.x, odom_msg.pose.pose.orientation.y, odom_msg.pose.pose.orientation.z);
-    quat.normalize();
-    odom_tf.transform.rotation.x = quat.x();
-    odom_tf.transform.rotation.y = quat.y();
-    odom_tf.transform.rotation.z = quat.z();
-    odom_tf.transform.rotation.w = quat.w();
+    odom_tf.transform.rotation.x = odom_msg.pose.pose.orientation.x;
+    odom_tf.transform.rotation.y = odom_msg.pose.pose.orientation.y;
+    odom_tf.transform.rotation.z = odom_msg.pose.pose.orientation.z;
+    odom_tf.transform.rotation.w = odom_msg.pose.pose.orientation.w;
     tf_broadcaster_.sendTransform(odom_tf);
 }
 

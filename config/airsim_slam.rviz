@@ -7,7 +7,7 @@ Panels:
         - /Global Options1
         - /Status1
         - /TF1/Frames1
-        - /LaserScan1
+        - /SafeZone1
       Splitter Ratio: 0.5
     Tree Height: 677
   - Class: rviz/Selection
@@ -119,20 +119,6 @@ Visualization Manager:
           map_ned:
             {}
           odom:
-            base_link:
-              Copter/Lidar1:
-                {}
-              base_link_frd:
-                {}
-              front_center_custom_body:
-                front_center_custom_optical:
-                  {}
-              front_left_custom_body:
-                front_left_custom_optical:
-                  {}
-              front_right_custom_body:
-                front_right_custom_optical:
-                  {}
             odom_ned:
               {}
       Update Interval: 0
@@ -195,6 +181,15 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Alpha: 1
+      Class: rviz/Polygon
+      Color: 25; 255; 0
+      Enabled: true
+      Name: SafeZone
+      Queue Size: 10
+      Topic: /safety_box
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -223,7 +218,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 10
+      Distance: 9.27528190612793
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
