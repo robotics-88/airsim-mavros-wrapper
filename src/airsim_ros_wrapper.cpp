@@ -660,6 +660,10 @@ void AirsimRosWrapper::publishMapTf()
 
 void AirsimRosWrapper::publishOdomTf(const nav_msgs::Odometry& odom_msg)
 {
+    if (odom_msg.pose.pose.orientation.x == 0 && odom_msg.pose.pose.orientation.y == 0 && odom_msg.pose.pose.orientation.z == 0 && odom_msg.pose.pose.orientation.w == 0) {
+        ROS_INFO_THROTTLE(30, "Odom msg invalid.");
+        return;
+    }
     //shd be odom to base link
     geometry_msgs::TransformStamped odom_tf;
     // TODO: why does MAVROS odom have map to odom instead of odom to base_link? mapping still works but verify all tf frames correct later

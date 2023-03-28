@@ -13,7 +13,7 @@
 
     <!-- <param name="/use_sim_time" value="true"/> -->
 
-    <node pkg="airsim_launch" type="airsim_node" respawn="false" name="airsim_ros_node" output="log">
+    <node pkg="airsim_launch" type="airsim_node" respawn="false" name="airsim_ros_node" output="screen">
         <param name="update_airsim_img_response_every_n_sec" value="$(arg image_pub_freq)" />
         <param name="update_lidar_every_n_sec" value="$(arg lidar_pub_freq)" />
         <param name="update_airsim_control_every_n_sec" value="$(arg control_pub_freq)" />
