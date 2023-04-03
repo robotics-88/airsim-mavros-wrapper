@@ -90,8 +90,6 @@ Visualization Manager:
           Value: true
         base_link_frd:
           Value: false
-        base_stabilized:
-          Value: true
         front_center_custom_body:
           Value: true
         front_center_custom_optical:
@@ -123,23 +121,22 @@ Visualization Manager:
           map_ned:
             {}
           odom:
-            base_stabilized:
-              base_link:
-                Copter/Lidar1:
+            base_link:
+              Copter/Lidar1:
+                {}
+              Copter/Lidar2:
+                {}
+              base_link_frd:
+                {}
+              front_center_custom_body:
+                front_center_custom_optical:
                   {}
-                Copter/Lidar2:
+              front_left_custom_body:
+                front_left_custom_optical:
                   {}
-                base_link_frd:
+              front_right_custom_body:
+                front_right_custom_optical:
                   {}
-                front_center_custom_body:
-                  front_center_custom_optical:
-                    {}
-                front_left_custom_body:
-                  front_left_custom_optical:
-                    {}
-                front_right_custom_body:
-                  front_right_custom_optical:
-                    {}
             odom_ned:
               {}
       Update Interval: 0
@@ -150,7 +147,7 @@ Visualization Manager:
       Draw Behind: false
       Enabled: true
       Name: Map
-      Topic: /map
+      Topic: /projected_map
       Unreliable: false
       Use Timestamp: false
       Value: true
@@ -267,7 +264,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.790581464767456
+      Distance: 6.680300235748291
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -283,9 +280,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.1453975439071655
+      Pitch: 0.445398211479187
       Target Frame: <Fixed Frame>
-      Yaw: 4.700397491455078
+      Yaw: 5.070398807525635
     Saved: ~
 Window Geometry:
   Depth:

@@ -383,8 +383,9 @@ void AirsimRosWrapper::appendStaticCameraTf(VehicleROS* vehicle_ros, const std::
 
 void AirsimRosWrapper::appendStaticLidarTf(VehicleROS* vehicle_ros, const std::string& lidar_name, const msr::airlib::LidarSimpleParams& lidar_setting)
 {
+    // Something is extremely questionable, dont know if its me or AirSim. When mounted standard (in AS json), needs attach to base link frd. When mounted vertically, needs attach to base link.
     geometry_msgs::TransformStamped lidar_tf_msg;
-    lidar_tf_msg.header.frame_id = vehicle_frame_id_;
+    lidar_tf_msg.header.frame_id = "base_link_frd"; // This is such a regrettable hacky hack bc it should be base_link, but for w/e reason, consistently upside down, whether rotate at 0, 180, -180, etc, all upside down. This fixed it.
     lidar_tf_msg.child_frame_id = vehicle_ros->vehicle_name + "/" + lidar_name;
     lidar_tf_msg.transform.translation.x = lidar_setting.relative_pose.position.x();
     lidar_tf_msg.transform.translation.y = lidar_setting.relative_pose.position.y();

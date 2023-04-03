@@ -3,7 +3,7 @@
 
   <node pkg="explore_uav" type="explore" respawn="false" name="explore" output="screen">
     <param name="robot_base_frame" value="$(arg robot_base_frame)"/>
-    <param name="costmap_topic" value="/map"/>
+    <param name="costmap_topic" value="/projected_map"/>
     <param name="costmap_updates_topic" value="/map_updates"/>
     <param name="visualize" value="true"/>
     <param name="planner_frequency" value="0.33"/>
