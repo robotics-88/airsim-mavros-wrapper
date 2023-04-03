@@ -389,7 +389,7 @@ void AirsimRosWrapper::appendStaticLidarTf(VehicleROS* vehicle_ros, const std::s
     lidar_tf_msg.transform.translation.x = lidar_setting.relative_pose.position.x();
     lidar_tf_msg.transform.translation.y = lidar_setting.relative_pose.position.y();
     lidar_tf_msg.transform.translation.z = lidar_setting.relative_pose.position.z();
-    lidar_tf_msg.transform.rotation.x = lidar_setting.relative_pose.orientation.x();
+    lidar_tf_msg.transform.rotation.x = -1 * lidar_setting.relative_pose.orientation.x();
     lidar_tf_msg.transform.rotation.y = lidar_setting.relative_pose.orientation.y();
     lidar_tf_msg.transform.rotation.z = lidar_setting.relative_pose.orientation.z();
     lidar_tf_msg.transform.rotation.w = lidar_setting.relative_pose.orientation.w();

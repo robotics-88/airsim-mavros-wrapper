@@ -1,0 +1,27 @@
+verbose: true
+
+scope_timer:
+  enable: false
+  log_filename: "" # used, if not empty
+
+# LiDAR scan parameters
+# by default, these obtained by subscribing to the
+# MRS PCL Filter diagnostics
+scan_line: -1 # [-]
+vertical_fov: -1 # [deg]
+sensor_frequency: -1 # [Hz]
+
+initialize_from_odom: false
+
+mapping:
+  remap_tf: false
+  rate: 10.0 # [Hz]
+  publish_rate: 0.5 # [Hz]
+  line_resolution: 0.2
+  plane_resolution: 0.4
+
+# Parameters for offline processing (data read from rosbag)
+offline:
+  run: false
+  rosbag: ""
+  timeout: 0.2

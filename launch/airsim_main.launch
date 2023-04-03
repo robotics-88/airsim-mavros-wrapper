@@ -30,9 +30,12 @@
         <param name="depth_info" value="$(arg depth_info)"/>
     </node>
 
-    <include file="$(find airsim_launch)/launch/airsim_rtabmap.launch"/>
+    <include file="$(find vegetation)/launch/octomap.launch">
+        <arg name="cloud_topic" value="/airsim_ros_node/Copter/lidar/Lidar2"/>
+    </include>
+
     <include file="$(find airsim_launch)/launch/airsim_explore.launch"/>
     <include file="$(find monarch)/launch/monarch.launch"/>
 
-    <node type="rviz" name="zed_rviz" pkg="rviz" args="-d $(find airsim_launch)/config/airsim_slam.rviz" output="log"/>
+    <node type="rviz" name="airsim_rviz" pkg="rviz" args="-d $(find airsim_launch)/config/airsim_slam.rviz" output="log"/>
 </launch>

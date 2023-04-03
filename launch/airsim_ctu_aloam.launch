@@ -1,0 +1,22 @@
+<launch>
+
+  <include file="$(find aloam_slam)/launch/aloam.launch">
+    <arg name="fcu_frame" value="base_link" />
+    <arg name="lidar_frame" value="Copter/Lidar2" />
+    <arg name="odom_frame" value="odom" />
+    <arg name="map_frame" value="map" />
+    <arg name="init_frame" value="map" />
+
+    <arg name="standalone" value="true" />
+    <arg name="nodelet_manager_name" value="my_nodelet_manager" />
+    <arg name="custom_config" value="$(find airsim_launch)/config/ctu_aloam.yaml" />
+    <arg name="debug" value="false" />
+    <arg name="points_topic" value="/airsim_ros_node/Copter/lidar/Lidar2" />
+
+  </include>
+
+  <include file="$(find vegetation)/launch/octomap.launch">
+        <arg name="cloud_topic" value="/Copter/slam/map"/>
+    </include>
+
+</launch>
