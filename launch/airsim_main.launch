@@ -30,7 +30,7 @@
         <param name="depth_info" value="$(arg depth_info)"/>
     </node>
 
-    <include file="$(find vegetation)/launch/octomap.launch">
+    <include file="$(find octomap_slice)/launch/octomap_full_handling.launch">
         <arg name="cloud_topic" value="/airsim_ros_node/Copter/lidar/Lidar2"/>
     </include>
 

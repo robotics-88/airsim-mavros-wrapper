@@ -7,6 +7,7 @@ Panels:
         - /Global Options1
         - /Status1
         - /TF1/Frames1
+        - /Map1/Status1
         - /SafeZone1
       Splitter Ratio: 0.5
     Tree Height: 677
@@ -122,12 +123,11 @@ Visualization Manager:
             {}
           odom:
             base_link:
-              Copter/Lidar1:
-                {}
-              Copter/Lidar2:
-                {}
               base_link_frd:
-                {}
+                Copter/Lidar1:
+                  {}
+                Copter/Lidar2:
+                  {}
               front_center_custom_body:
                 front_center_custom_optical:
                   {}
@@ -147,7 +147,7 @@ Visualization Manager:
       Draw Behind: false
       Enabled: true
       Name: Map
-      Topic: /projected_map
+      Topic: /octomap_slice
       Unreliable: false
       Use Timestamp: false
       Value: true
@@ -264,7 +264,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 6.680300235748291
+      Distance: 11.772971153259277
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -280,9 +280,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.445398211479187
+      Pitch: 0.7203981280326843
       Target Frame: <Fixed Frame>
-      Yaw: 5.070398807525635
+      Yaw: 5.5204010009765625
     Saved: ~
 Window Geometry:
   Depth:
