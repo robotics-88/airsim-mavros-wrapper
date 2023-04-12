@@ -5,7 +5,10 @@
     <arg name="map_frame" default="map"/>
     <arg name="world_frame" default="world"/>
 
-    <include file="$(find airsim_launch)/launch/airsim_ardupilot.launch"/>
+    <arg name="ardupilot" default="true"/>
+
+    <include file="$(find airsim_launch)/launch/airsim_ardupilot.launch" if="$(arg ardupilot)"/>
+    <include file="$(find airsim_launch)/launch/airsim_px4.launch" unless="$(arg ardupilot)"/>
 
     <arg name="image_pub_freq" default=".1"/>
     <arg name="lidar_pub_freq" default=".1"/>
@@ -35,7 +38,9 @@
     </include>
 
     <include file="$(find airsim_launch)/launch/airsim_explore.launch"/>
-    <include file="$(find monarch)/launch/monarch.launch"/>
+    <include file="$(find monarch)/launch/monarch.launch">
+        <arg name="ardupilot" value="$(arg ardupilot)" />
+    </include>
 
     <node type="rviz" name="airsim_rviz" pkg="rviz" args="-d $(find airsim_launch)/config/airsim_slam.rviz" output="log"/>
 </launch>
