@@ -1,0 +1,3 @@
+vehicle_name: "/airsim_node/Copter"
+vehicle_frame: "Copter"
+map_frame: "world_enu"
