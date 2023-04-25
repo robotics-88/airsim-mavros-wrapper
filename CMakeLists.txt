@@ -74,6 +74,7 @@ add_executable(airsim_node
 
 add_library(airsim_ros 
   src/airsim_ros_wrapper.cpp
+  src/airsim_ned_wrapper.cpp
 )
 target_link_libraries(airsim_ros ${catkin_LIBRARIES} ${OpenCV_LIBS} yaml-cpp AirLib)
 
