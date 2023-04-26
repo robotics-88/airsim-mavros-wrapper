@@ -39,6 +39,10 @@ AirsimNEDWrapper::AirsimNEDWrapper(const ros::NodeHandle& nh)
     , nh_(nh)
     , nh_private_("~")
     , host_ip_("127.0.0.1")
+    , odom_frame_id_("odom")
+    , world_frame_id_("world")
+    , map_frame_id_("map")
+    , vehicle_frame_id_("base_link_frd")
     , airsim_client_images_(host_ip_)
     , airsim_client_lidar_(host_ip_)
     , has_gimbal_cmd_(false)
@@ -117,17 +121,15 @@ void AirsimNEDWrapper::initialize_airsim()
 
 void AirsimNEDWrapper::initialize_ros()
 {
-
     // ros params
     double update_airsim_control_every_n_sec;
     nh_private_.getParam("is_vulkan", is_vulkan_);
     nh_private_.getParam("update_airsim_control_every_n_sec", update_airsim_control_every_n_sec);
     nh_private_.getParam("publish_clock", publish_clock_);
+    nh_private_.param("vehicle_frame_id", vehicle_frame_id_, vehicle_frame_id_);
+    nh_private_.param("map_frame_id", map_frame_id_, map_frame_id_);
     nh_private_.param("world_frame_id", world_frame_id_, world_frame_id_);
-    odom_frame_id_ = world_frame_id_ == AIRSIM_FRAME_ID ? AIRSIM_ODOM_FRAME_ID : ENU_ODOM_FRAME_ID;
     nh_private_.param("odom_frame_id", odom_frame_id_, odom_frame_id_);
-    isENU_ = !(odom_frame_id_ == AIRSIM_ODOM_FRAME_ID);
-    nh_private_.param("coordinate_system_enu", isENU_, isENU_);
     vel_cmd_duration_ = 0.05; // todo rosparam
     // todo enforce dynamics constraints in this node as well?
     // nh_.getParam("max_vert_vel_", max_vert_vel_);
@@ -915,11 +917,12 @@ sensor_msgs::Imu AirsimNEDWrapper::get_imu_msg_from_airsim(const msr::airlib::Im
     return imu_msg;
 }
 
-void AirsimNEDWrapper::publish_odom_tf(const nav_msgs::Odometry& odom_msg)
+void AirsimNEDWrapper::publish_vehicle_tf(const nav_msgs::Odometry& odom_msg)
 {
     geometry_msgs::TransformStamped odom_tf;
     odom_tf.header = odom_msg.header;
-    odom_tf.child_frame_id = odom_msg.child_frame_id;
+    odom_tf.header.frame_id = map_frame_id_;
+    odom_tf.child_frame_id = vehicle_frame_id_;
     odom_tf.transform.translation.x = odom_msg.pose.pose.position.x;
     odom_tf.transform.translation.y = odom_msg.pose.pose.position.y;
     odom_tf.transform.translation.z = odom_msg.pose.pose.position.z;
@@ -1079,8 +1082,8 @@ ros::Time AirsimNEDWrapper::update_state()
         // vehicle_ros->env_msg = env_msg;
 
         // convert airsim drone state to ROS msgs
-        vehicle_ros->curr_odom.header.frame_id = vehicle_ros->vehicle_name;
-        vehicle_ros->curr_odom.child_frame_id = vehicle_ros->odom_frame_id;
+        vehicle_ros->curr_odom.header.frame_id = map_frame_id_;
+        vehicle_ros->curr_odom.child_frame_id = vehicle_frame_id_;
         vehicle_ros->curr_odom.header.stamp = vehicle_time;
     }
 
@@ -1103,7 +1106,7 @@ void AirsimNEDWrapper::publish_vehicle_state()
 
         // odom and transforms
         vehicle_ros->odom_local_pub.publish(vehicle_ros->curr_odom);
-        publish_odom_tf(vehicle_ros->curr_odom);
+        publish_vehicle_tf(vehicle_ros->curr_odom);
 
         // ground truth GPS position from sim/HITL
         vehicle_ros->global_gps_pub.publish(vehicle_ros->gps_sensor_msg);
@@ -1120,21 +1123,21 @@ void AirsimNEDWrapper::publish_vehicle_state()
             case SensorBase::SensorType::Imu: {
                 auto imu_data = airsim_client_->getImuData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
                 sensor_msgs::Imu imu_msg = get_imu_msg_from_airsim(imu_data);
-                imu_msg.header.frame_id = vehicle_ros->vehicle_name;
+                imu_msg.header.frame_id = vehicle_frame_id_;
                 sensor_publisher.publisher.publish(imu_msg);
                 break;
             }
             case SensorBase::SensorType::Distance: {
                 auto distance_data = airsim_client_->getDistanceSensorData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
                 sensor_msgs::Range dist_msg = get_range_from_airsim(distance_data);
-                dist_msg.header.frame_id = vehicle_ros->vehicle_name;
+                dist_msg.header.frame_id = vehicle_frame_id_;
                 sensor_publisher.publisher.publish(dist_msg);
                 break;
             }
             case SensorBase::SensorType::Gps: {
                 auto gps_data = airsim_client_->getGpsData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
                 sensor_msgs::NavSatFix gps_msg = get_gps_msg_from_airsim(gps_data);
-                gps_msg.header.frame_id = vehicle_ros->vehicle_name;
+                gps_msg.header.frame_id = vehicle_frame_id_;
                 sensor_publisher.publisher.publish(gps_msg);
                 break;
             }
@@ -1145,7 +1148,7 @@ void AirsimNEDWrapper::publish_vehicle_state()
             case SensorBase::SensorType::Magnetometer: {
                 auto mag_data = airsim_client_->getMagnetometerData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
                 sensor_msgs::MagneticField mag_msg = get_mag_msg_from_airsim(mag_data);
-                mag_msg.header.frame_id = vehicle_ros->vehicle_name;
+                mag_msg.header.frame_id = vehicle_frame_id_;
                 sensor_publisher.publisher.publish(mag_msg);
                 break;
             }
@@ -1243,6 +1246,7 @@ void AirsimNEDWrapper::set_nans_to_zeros_in_pose(const VehicleSetting& vehicle_s
 
 void AirsimNEDWrapper::append_static_vehicle_tf(VehicleROS* vehicle_ros, const VehicleSetting& vehicle_setting)
 {
+    // TODO delete this? or is it supposed to be the tf from world to map?
     geometry_msgs::TransformStamped vehicle_tf_msg;
     vehicle_tf_msg.header.frame_id = world_frame_id_;
     vehicle_tf_msg.header.stamp = ros::Time(0);
@@ -1270,8 +1274,8 @@ void AirsimNEDWrapper::append_static_vehicle_tf(VehicleROS* vehicle_ros, const V
 void AirsimNEDWrapper::append_static_lidar_tf(VehicleROS* vehicle_ros, const std::string& lidar_name, const msr::airlib::LidarSimpleParams& lidar_setting)
 {
     geometry_msgs::TransformStamped lidar_tf_msg;
-    lidar_tf_msg.header.frame_id = vehicle_ros->vehicle_name + "/" + odom_frame_id_;
-    lidar_tf_msg.child_frame_id = vehicle_ros->vehicle_name + "/" + lidar_name;
+    lidar_tf_msg.header.frame_id = vehicle_frame_id_;
+    lidar_tf_msg.child_frame_id = vehicle_frame_id_ + "/" + lidar_name;
     lidar_tf_msg.transform.translation.x = lidar_setting.relative_pose.position.x();
     lidar_tf_msg.transform.translation.y = lidar_setting.relative_pose.position.y();
     lidar_tf_msg.transform.translation.z = lidar_setting.relative_pose.position.z();
@@ -1293,8 +1297,8 @@ void AirsimNEDWrapper::append_static_lidar_tf(VehicleROS* vehicle_ros, const std
 void AirsimNEDWrapper::append_static_camera_tf(VehicleROS* vehicle_ros, const std::string& camera_name, const CameraSetting& camera_setting)
 {
     geometry_msgs::TransformStamped static_cam_tf_body_msg;
-    static_cam_tf_body_msg.header.frame_id = vehicle_ros->vehicle_name + "/" + odom_frame_id_;
-    static_cam_tf_body_msg.child_frame_id = camera_name + "_body/static";
+    static_cam_tf_body_msg.header.frame_id = vehicle_frame_id_;
+    static_cam_tf_body_msg.child_frame_id = camera_name + "_body";
     static_cam_tf_body_msg.transform.translation.x = camera_setting.position.x();
     static_cam_tf_body_msg.transform.translation.y = camera_setting.position.y();
     static_cam_tf_body_msg.transform.translation.z = camera_setting.position.z();
@@ -1313,7 +1317,7 @@ void AirsimNEDWrapper::append_static_camera_tf(VehicleROS* vehicle_ros, const st
     }
 
     geometry_msgs::TransformStamped static_cam_tf_optical_msg = static_cam_tf_body_msg;
-    static_cam_tf_optical_msg.child_frame_id = camera_name + "_optical/static";
+    static_cam_tf_optical_msg.child_frame_id = camera_name + "_optical";
 
     tf2::Quaternion quat_cam_body;
     tf2::Quaternion quat_cam_optical;
@@ -1388,7 +1392,7 @@ sensor_msgs::ImagePtr AirsimNEDWrapper::get_img_msg_from_response(const ImageRes
     sensor_msgs::ImagePtr img_msg_ptr = boost::make_shared<sensor_msgs::Image>();
     img_msg_ptr->data = img_response.image_data_uint8;
     img_msg_ptr->step = img_response.width * 3; // todo un-hardcode. image_width*num_bytes
-    img_msg_ptr->header.stamp = airsim_timestamp_to_ros(img_response.time_stamp);
+    img_msg_ptr->header.stamp = curr_ros_time;// airsim_timestamp_to_ros(img_response.time_stamp);
     img_msg_ptr->header.frame_id = frame_id;
     img_msg_ptr->height = img_response.height;
     img_msg_ptr->width = img_response.width;
@@ -1407,7 +1411,7 @@ sensor_msgs::ImagePtr AirsimNEDWrapper::get_depth_img_msg_from_response(const Im
     // hence the dependency on opencv and cv_bridge. however, this is an extremely fast op, so no big deal.
     cv::Mat depth_img = manual_decode_depth(img_response);
     sensor_msgs::ImagePtr depth_img_msg = cv_bridge::CvImage(std_msgs::Header(), "32FC1", depth_img).toImageMsg();
-    depth_img_msg->header.stamp = airsim_timestamp_to_ros(img_response.time_stamp);
+    depth_img_msg->header.stamp = curr_ros_time;// airsim_timestamp_to_ros(img_response.time_stamp);
     depth_img_msg->header.frame_id = frame_id;
     return depth_img_msg;
 }
@@ -1438,14 +1442,14 @@ void AirsimNEDWrapper::process_and_publish_img_response(const std::vector<ImageR
     for (const auto& curr_img_response : img_response_vec) {
         // todo publishing a tf for each capture type seems stupid. but it foolproofs us against render thread's async stuff, I hope.
         // Ideally, we should loop over cameras and then captures, and publish only one tf.
-        publish_camera_tf(curr_img_response, curr_ros_time, vehicle_name, curr_img_response.camera_name);
+        // publish_camera_tf(curr_img_response, curr_ros_time, vehicle_name, curr_img_response.camera_name);
 
         // todo simGetCameraInfo is wrong + also it's only for image type -1.
         // msr::airlib::CameraInfo camera_info = airsim_client_.simGetCameraInfo(curr_img_response.camera_name);
 
         // update timestamp of saved cam info msgs
 
-        camera_info_msg_vec_[img_response_idx_internal].header.stamp = airsim_timestamp_to_ros(curr_img_response.time_stamp);
+        camera_info_msg_vec_[img_response_idx_internal].header.stamp = curr_ros_time;// airsim_timestamp_to_ros(curr_img_response.time_stamp);
         cam_info_pub_vec_[img_response_idx_internal].publish(camera_info_msg_vec_[img_response_idx_internal]);
 
         // DepthPlanar / DepthPerspective / DepthVis / DisparityNormalized
@@ -1469,47 +1473,47 @@ void AirsimNEDWrapper::process_and_publish_img_response(const std::vector<ImageR
 // We first do a change of basis to camera optical frame (Z forward, X right, Y down)
 void AirsimNEDWrapper::publish_camera_tf(const ImageResponse& img_response, const ros::Time& ros_time, const std::string& frame_id, const std::string& child_frame_id)
 {
-    geometry_msgs::TransformStamped cam_tf_body_msg;
-    cam_tf_body_msg.header.stamp = airsim_timestamp_to_ros(img_response.time_stamp);
-    cam_tf_body_msg.header.frame_id = frame_id;
-    cam_tf_body_msg.child_frame_id = child_frame_id + "_body";
-    cam_tf_body_msg.transform.translation.x = img_response.camera_position.x();
-    cam_tf_body_msg.transform.translation.y = img_response.camera_position.y();
-    cam_tf_body_msg.transform.translation.z = img_response.camera_position.z();
-    cam_tf_body_msg.transform.rotation.x = img_response.camera_orientation.x();
-    cam_tf_body_msg.transform.rotation.y = img_response.camera_orientation.y();
-    cam_tf_body_msg.transform.rotation.z = img_response.camera_orientation.z();
-    cam_tf_body_msg.transform.rotation.w = img_response.camera_orientation.w();
+    // geometry_msgs::TransformStamped cam_tf_body_msg;
+    // cam_tf_body_msg.header.stamp = airsim_timestamp_to_ros(img_response.time_stamp);
+    // cam_tf_body_msg.header.frame_id = frame_id;
+    // cam_tf_body_msg.child_frame_id = child_frame_id + "_body";
+    // cam_tf_body_msg.transform.translation.x = img_response.camera_position.x();
+    // cam_tf_body_msg.transform.translation.y = img_response.camera_position.y();
+    // cam_tf_body_msg.transform.translation.z = img_response.camera_position.z();
+    // cam_tf_body_msg.transform.rotation.x = img_response.camera_orientation.x();
+    // cam_tf_body_msg.transform.rotation.y = img_response.camera_orientation.y();
+    // cam_tf_body_msg.transform.rotation.z = img_response.camera_orientation.z();
+    // cam_tf_body_msg.transform.rotation.w = img_response.camera_orientation.w();
 
-    if (isENU_) {
-        std::swap(cam_tf_body_msg.transform.translation.x, cam_tf_body_msg.transform.translation.y);
-        std::swap(cam_tf_body_msg.transform.rotation.x, cam_tf_body_msg.transform.rotation.y);
-        cam_tf_body_msg.transform.translation.z = -cam_tf_body_msg.transform.translation.z;
-        cam_tf_body_msg.transform.rotation.z = -cam_tf_body_msg.transform.rotation.z;
-    }
+    // if (isENU_) {
+    //     std::swap(cam_tf_body_msg.transform.translation.x, cam_tf_body_msg.transform.translation.y);
+    //     std::swap(cam_tf_body_msg.transform.rotation.x, cam_tf_body_msg.transform.rotation.y);
+    //     cam_tf_body_msg.transform.translation.z = -cam_tf_body_msg.transform.translation.z;
+    //     cam_tf_body_msg.transform.rotation.z = -cam_tf_body_msg.transform.rotation.z;
+    // }
 
-    geometry_msgs::TransformStamped cam_tf_optical_msg;
-    cam_tf_optical_msg.header.stamp = airsim_timestamp_to_ros(img_response.time_stamp);
-    cam_tf_optical_msg.header.frame_id = frame_id;
-    cam_tf_optical_msg.child_frame_id = child_frame_id + "_optical";
-    cam_tf_optical_msg.transform.translation.x = cam_tf_body_msg.transform.translation.x;
-    cam_tf_optical_msg.transform.translation.y = cam_tf_body_msg.transform.translation.y;
-    cam_tf_optical_msg.transform.translation.z = cam_tf_body_msg.transform.translation.z;
+    // geometry_msgs::TransformStamped cam_tf_optical_msg;
+    // cam_tf_optical_msg.header.stamp = airsim_timestamp_to_ros(img_response.time_stamp);
+    // cam_tf_optical_msg.header.frame_id = frame_id;
+    // cam_tf_optical_msg.child_frame_id = child_frame_id + "_optical";
+    // cam_tf_optical_msg.transform.translation.x = cam_tf_body_msg.transform.translation.x;
+    // cam_tf_optical_msg.transform.translation.y = cam_tf_body_msg.transform.translation.y;
+    // cam_tf_optical_msg.transform.translation.z = cam_tf_body_msg.transform.translation.z;
 
-    tf2::Quaternion quat_cam_body;
-    tf2::Quaternion quat_cam_optical;
-    tf2::convert(cam_tf_body_msg.transform.rotation, quat_cam_body);
-    tf2::Matrix3x3 mat_cam_body(quat_cam_body);
-    // tf2::Matrix3x3 mat_cam_optical = matrix_cam_body_to_optical_ * mat_cam_body * matrix_cam_body_to_optical_inverse_;
-    // tf2::Matrix3x3 mat_cam_optical = matrix_cam_body_to_optical_ * mat_cam_body;
-    tf2::Matrix3x3 mat_cam_optical;
-    mat_cam_optical.setValue(mat_cam_body.getColumn(1).getX(), mat_cam_body.getColumn(2).getX(), mat_cam_body.getColumn(0).getX(), mat_cam_body.getColumn(1).getY(), mat_cam_body.getColumn(2).getY(), mat_cam_body.getColumn(0).getY(), mat_cam_body.getColumn(1).getZ(), mat_cam_body.getColumn(2).getZ(), mat_cam_body.getColumn(0).getZ());
-    mat_cam_optical.getRotation(quat_cam_optical);
-    quat_cam_optical.normalize();
-    tf2::convert(quat_cam_optical, cam_tf_optical_msg.transform.rotation);
+    // tf2::Quaternion quat_cam_body;
+    // tf2::Quaternion quat_cam_optical;
+    // tf2::convert(cam_tf_body_msg.transform.rotation, quat_cam_body);
+    // tf2::Matrix3x3 mat_cam_body(quat_cam_body);
+    // // tf2::Matrix3x3 mat_cam_optical = matrix_cam_body_to_optical_ * mat_cam_body * matrix_cam_body_to_optical_inverse_;
+    // // tf2::Matrix3x3 mat_cam_optical = matrix_cam_body_to_optical_ * mat_cam_body;
+    // tf2::Matrix3x3 mat_cam_optical;
+    // mat_cam_optical.setValue(mat_cam_body.getColumn(1).getX(), mat_cam_body.getColumn(2).getX(), mat_cam_body.getColumn(0).getX(), mat_cam_body.getColumn(1).getY(), mat_cam_body.getColumn(2).getY(), mat_cam_body.getColumn(0).getY(), mat_cam_body.getColumn(1).getZ(), mat_cam_body.getColumn(2).getZ(), mat_cam_body.getColumn(0).getZ());
+    // mat_cam_optical.getRotation(quat_cam_optical);
+    // quat_cam_optical.normalize();
+    // tf2::convert(quat_cam_optical, cam_tf_optical_msg.transform.rotation);
 
-    tf_broadcaster_.sendTransform(cam_tf_body_msg);
-    tf_broadcaster_.sendTransform(cam_tf_optical_msg);
+    // tf_broadcaster_.sendTransform(cam_tf_body_msg);
+    // tf_broadcaster_.sendTransform(cam_tf_optical_msg);
 }
 
 // void AirsimNEDWrapper::convert_yaml_to_simple_mat(const YAML::Node& node, SimpleMatrix& m) const
