@@ -134,7 +134,7 @@ void AirsimNEDWrapper::initialize_ros()
     // nh_.getParam("max_horz_vel", max_horz_vel_)
 
     create_ros_pubs_from_settings_json();
-    airsim_control_update_timer_ = nh_private_.createTimer(ros::Duration(update_airsim_control_every_n_sec), &AirsimNEDWrapper::drone_state_timer_cb, this);
+    airsim_control_update_timer_ = nh_.createTimer(ros::Duration(update_airsim_control_every_n_sec), &AirsimNEDWrapper::drone_state_timer_cb, this);
 }
 
 // XmlRpc::XmlRpcValue can't be const in this case
@@ -181,7 +181,7 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
 
         // vehicle_ros->env_pub = nh_private_.advertise<airsim_ros_pkgs::Environment>(curr_vehicle_name + "/environment", 10);
 
-        // vehicle_ros->global_gps_pub = nh_private_.advertise<sensor_msgs::NavSatFix>(curr_vehicle_name + "/global_gps", 10);
+        vehicle_ros->global_gps_pub = nh_private_.advertise<sensor_msgs::NavSatFix>(curr_vehicle_name + "/global_gps", 10);
 
         if (airsim_mode_ == AIRSIM_MODE::DRONE) {
             auto drone = static_cast<MultiRotorROS*>(vehicle_ros.get());
@@ -304,7 +304,7 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
                     break;
                 }
                 default: {
-                    throw std::invalid_argument("Unexpected sensor type");
+                    // throw std::invalid_argument("Unexpected sensor type");
                 }
                 }
                 sensors.emplace_back(sensor_publisher);
@@ -353,11 +353,12 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
         double update_airsim_img_response_every_n_sec;
         nh_private_.getParam("update_airsim_img_response_every_n_sec", update_airsim_img_response_every_n_sec);
 
-        ros::TimerOptions timer_options(ros::Duration(update_airsim_img_response_every_n_sec),
-                                        boost::bind(&AirsimNEDWrapper::img_response_timer_cb, this, _1),
-                                        &img_timer_cb_queue_);
+        // ros::TimerOptions timer_options(ros::Duration(update_airsim_img_response_every_n_sec),
+        //                                 boost::bind(&AirsimNEDWrapper::img_response_timer_cb, this, _1),
+        //                                 &img_timer_cb_queue_);
 
-        airsim_img_response_timer_ = nh_private_.createTimer(timer_options);
+        // airsim_img_response_timer_ = nh_.createTimer(timer_options);
+        airsim_img_response_timer_ = nh_.createTimer(ros::Duration(update_airsim_img_response_every_n_sec), &AirsimNEDWrapper::img_response_timer_cb, this);
         is_used_img_timer_cb_queue_ = true;
     }
 
@@ -367,11 +368,12 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
         nh_private_.getParam("update_lidar_every_n_sec", update_lidar_every_n_sec);
         // nh_private_.setCallbackQueue(&lidar_timer_cb_queue_);
 
-        ros::TimerOptions timer_options(ros::Duration(update_lidar_every_n_sec),
-                                        boost::bind(&AirsimNEDWrapper::lidar_timer_cb, this, _1),
-                                        &lidar_timer_cb_queue_);
+        // ros::TimerOptions timer_options(ros::Duration(update_lidar_every_n_sec),
+        //                                 boost::bind(&AirsimNEDWrapper::lidar_timer_cb, this, _1),
+        //                                 &lidar_timer_cb_queue_);
 
-        airsim_lidar_update_timer_ = nh_private_.createTimer(timer_options);
+        // airsim_lidar_update_timer_ = nh_.createTimer(timer_options);
+        airsim_lidar_update_timer_ = nh_.createTimer(ros::Duration(update_lidar_every_n_sec), &AirsimNEDWrapper::lidar_timer_cb, this);
         is_used_lidar_timer_cb_queue_ = true;
     }
 
@@ -759,7 +761,7 @@ nav_msgs::Odometry AirsimNEDWrapper::get_odom_msg_from_multirotor_state(const ms
 sensor_msgs::PointCloud2 AirsimNEDWrapper::get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data, const std::string& vehicle_name, const std::string& sensor_name) const
 {
     sensor_msgs::PointCloud2 lidar_msg;
-    lidar_msg.header.stamp = ros::Time::now();
+    lidar_msg.header.stamp = ros::Time(0);
     lidar_msg.header.frame_id = vehicle_name + "/" + sensor_name;
 
     if (lidar_data.point_cloud.size() > 3) {
@@ -1019,7 +1021,7 @@ void AirsimNEDWrapper::update_and_publish_static_transforms(VehicleROS* vehicle_
 ros::Time AirsimNEDWrapper::update_state()
 {
     bool got_sim_time = false;
-    ros::Time curr_ros_time = ros::Time::now();
+    ros::Time curr_ros_time = ros::Time(0);
 
     //should be easier way to get the sim time through API, something like:
     //msr::airlib::Environment::State env = airsim_client_->simGetGroundTruthEnvironment("");
@@ -1243,7 +1245,7 @@ void AirsimNEDWrapper::append_static_vehicle_tf(VehicleROS* vehicle_ros, const V
 {
     geometry_msgs::TransformStamped vehicle_tf_msg;
     vehicle_tf_msg.header.frame_id = world_frame_id_;
-    vehicle_tf_msg.header.stamp = ros::Time::now();
+    vehicle_tf_msg.header.stamp = ros::Time(0);
     vehicle_tf_msg.child_frame_id = vehicle_ros->vehicle_name;
     vehicle_tf_msg.transform.translation.x = vehicle_setting.position.x();
     vehicle_tf_msg.transform.translation.y = vehicle_setting.position.y();
@@ -1430,7 +1432,7 @@ sensor_msgs::CameraInfo AirsimNEDWrapper::generate_cam_info(const std::string& c
 void AirsimNEDWrapper::process_and_publish_img_response(const std::vector<ImageResponse>& img_response_vec, const int img_response_idx, const std::string& vehicle_name)
 {
     // todo add option to use airsim time (image_response.TTimePoint) like Gazebo /use_sim_time param
-    ros::Time curr_ros_time = ros::Time::now();
+    ros::Time curr_ros_time = ros::Time(0);
     int img_response_idx_internal = img_response_idx;
 
     for (const auto& curr_img_response : img_response_vec) {
