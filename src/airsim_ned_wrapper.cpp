@@ -165,28 +165,28 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
 
         set_nans_to_zeros_in_pose(*vehicle_setting);
 
-        std::unique_ptr<VehicleROS> vehicle_ros = nullptr;
+        vehicle_ros_ = nullptr;
 
         if (airsim_mode_ == AIRSIM_MODE::DRONE) {
-            vehicle_ros = std::unique_ptr<MultiRotorROS>(new MultiRotorROS());
+            vehicle_ros_ = std::unique_ptr<MultiRotorROS>(new MultiRotorROS());
         }
         else {
-            vehicle_ros = std::unique_ptr<CarROS>(new CarROS());
+            vehicle_ros_ = std::unique_ptr<CarROS>(new CarROS());
         }
 
-        vehicle_ros->odom_frame_id = curr_vehicle_name + "/" + odom_frame_id_;
-        vehicle_ros->vehicle_name = curr_vehicle_name;
+        vehicle_ros_->odom_frame_id = curr_vehicle_name + "/" + odom_frame_id_;
+        vehicle_ros_->vehicle_name = curr_vehicle_name;
 
-        append_static_vehicle_tf(vehicle_ros.get(), *vehicle_setting);
+        append_static_vehicle_tf(vehicle_ros_.get(), *vehicle_setting);
 
-        vehicle_ros->odom_local_pub = nh_private_.advertise<nav_msgs::Odometry>(curr_vehicle_name + "/" + odom_frame_id_, 10);
+        vehicle_ros_->odom_local_pub = nh_private_.advertise<nav_msgs::Odometry>(curr_vehicle_name + "/" + odom_frame_id_, 10);
 
-        // vehicle_ros->env_pub = nh_private_.advertise<airsim_ros_pkgs::Environment>(curr_vehicle_name + "/environment", 10);
+        // vehicle_ros_->env_pub = nh_private_.advertise<airsim_ros_pkgs::Environment>(curr_vehicle_name + "/environment", 10);
 
-        vehicle_ros->global_gps_pub = nh_private_.advertise<sensor_msgs::NavSatFix>(curr_vehicle_name + "/global_gps", 10);
+        vehicle_ros_->global_gps_pub = nh_private_.advertise<sensor_msgs::NavSatFix>(curr_vehicle_name + "/global_gps", 10);
 
         if (airsim_mode_ == AIRSIM_MODE::DRONE) {
-            auto drone = static_cast<MultiRotorROS*>(vehicle_ros.get());
+            auto drone = static_cast<MultiRotorROS*>(vehicle_ros_.get());
 
             // // bind to a single callback. todo optimal subs queue length
             // // bind multiple topics to a single callback, but keep track of which vehicle name it was by passing curr_vehicle_name as the 2nd argument
@@ -212,7 +212,7 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
             // vehicle_ros.reset_srvr = nh_private_.advertiseService(curr_vehicle_name + "/reset",&AirsimNEDWrapper::reset_srv_cb, this);
         }
         else {
-            auto car = static_cast<CarROS*>(vehicle_ros.get());
+            auto car = static_cast<CarROS*>(vehicle_ros_.get());
             // car->car_cmd_sub = nh_private_.subscribe<airsim_ros_pkgs::CarControls>(
             //     curr_vehicle_name + "/car_cmd",
             //     1,
@@ -227,9 +227,9 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
             auto& curr_camera_name = curr_camera_elem.first;
 
             set_nans_to_zeros_in_pose(*vehicle_setting, camera_setting);
-            append_static_camera_tf(vehicle_ros.get(), curr_camera_name, camera_setting);
+            append_static_camera_tf(vehicle_ros_.get(), curr_camera_name, camera_setting);
             // camera_setting.gimbal
-            std::vector<ImageRequest> current_image_request_vec;
+            // std::vector<ImageRequest> current_image_request_vec;
 
             // iterate over capture_setting std::map<int, CaptureSetting> capture_settings
             for (const auto& curr_capture_elem : camera_setting.capture_settings) {
@@ -244,11 +244,11 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
                         curr_image_type == ImageType::Segmentation ||
                         curr_image_type == ImageType::SurfaceNormals ||
                         curr_image_type == ImageType::Infrared) {
-                        current_image_request_vec.push_back(ImageRequest(curr_camera_name, curr_image_type, false, false));
+                        airsim_img_request_vec_.push_back(ImageRequest(curr_camera_name, curr_image_type, false, false));
                     }
                     // if {DepthPlanar, DepthPerspective,DepthVis, DisparityNormalized}, get float image
                     else {
-                        current_image_request_vec.push_back(ImageRequest(curr_camera_name, curr_image_type, true));
+                        airsim_img_request_vec_.push_back(ImageRequest(curr_camera_name, curr_image_type, true));
                     }
 
                     const std::string cam_image_topic = curr_vehicle_name + "/" + curr_camera_name + "/" +
@@ -260,7 +260,7 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
                 }
             }
             // push back pair (vector of image captures, current vehicle name)
-            airsim_img_request_vehicle_name_pair_vec_.push_back({ current_image_request_vec, curr_vehicle_name });
+            airsim_img_request_vehicle_name_pair_vec_.push_back({ airsim_img_request_vec_, curr_vehicle_name });
         }
 
         // iterate over sensors
@@ -301,7 +301,7 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
                     auto lidar_setting = *static_cast<LidarSetting*>(sensor_setting.get());
                     msr::airlib::LidarSimpleParams params;
                     params.initializeFromSettings(lidar_setting);
-                    append_static_lidar_tf(vehicle_ros.get(), sensor_name, params);
+                    append_static_lidar_tf(vehicle_ros_.get(), sensor_name, params);
                     sensor_publisher.publisher = nh_private_.advertise<sensor_msgs::PointCloud2>(curr_vehicle_name + "/lidar/" + sensor_name, 10);
                     break;
                 }
@@ -319,11 +319,11 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
         };
         size_t cnt = std::count_if(sensors.begin(), sensors.end(), isLidar);
         lidar_cnt += cnt;
-        vehicle_ros->lidar_pubs.resize(cnt);
-        vehicle_ros->sensor_pubs.resize(sensors.size() - cnt);
-        std::partition_copy(sensors.begin(), sensors.end(), vehicle_ros->lidar_pubs.begin(), vehicle_ros->sensor_pubs.begin(), isLidar);
+        vehicle_ros_->lidar_pubs.resize(cnt);
+        vehicle_ros_->sensor_pubs.resize(sensors.size() - cnt);
+        std::partition_copy(sensors.begin(), sensors.end(), vehicle_ros_->lidar_pubs.begin(), vehicle_ros_->sensor_pubs.begin(), isLidar);
 
-        vehicle_name_ptr_map_.emplace(curr_vehicle_name, std::move(vehicle_ros)); // allows fast lookup in command callbacks in case of a lot of drones
+        vehicle_name_ptr_map_.emplace(curr_vehicle_name, std::move(vehicle_ros_)); // allows fast lookup in command callbacks in case of a lot of drones
     }
 
     // // add takeoff and land all services if more than 2 drones
@@ -1337,14 +1337,8 @@ void AirsimNEDWrapper::img_response_timer_cb(const ros::TimerEvent& event)
 {
     try {
         int image_response_idx = 0;
-        for (const auto& airsim_img_request_vehicle_name_pair : airsim_img_request_vehicle_name_pair_vec_) {
-            const std::vector<ImageResponse>& img_response = airsim_client_images_.simGetImages(airsim_img_request_vehicle_name_pair.first, airsim_img_request_vehicle_name_pair.second);
-
-            if (img_response.size() == airsim_img_request_vehicle_name_pair.first.size()) {
-                process_and_publish_img_response(img_response, image_response_idx, airsim_img_request_vehicle_name_pair.second);
-                image_response_idx += img_response.size();
-            }
-        }
+        const std::vector<ImageResponse>& img_response = airsim_client_images_.simGetImages(airsim_img_request_vec_);
+        process_and_publish_img_response(img_response, image_response_idx, vehicle_ros_->vehicle_name);
     }
 
     catch (rpc::rpc_error& e) {
@@ -1352,6 +1346,23 @@ void AirsimNEDWrapper::img_response_timer_cb(const ros::TimerEvent& event)
         std::cout << "Exception raised by the API, didn't get image response." << std::endl
                   << msg << std::endl;
     }
+    // try {
+    //     int image_response_idx = 0;
+    //     for (const auto& airsim_img_request_vehicle_name_pair : airsim_img_request_vehicle_name_pair_vec_) {
+    //         const std::vector<ImageResponse>& img_response = airsim_client_images_.simGetImages(airsim_img_request_vehicle_name_pair.first, airsim_img_request_vehicle_name_pair.second);
+
+    //         if (img_response.size() == airsim_img_request_vehicle_name_pair.first.size()) {
+    //             process_and_publish_img_response(img_response, image_response_idx, airsim_img_request_vehicle_name_pair.second);
+    //             image_response_idx += img_response.size();
+    //         }
+    //     }
+    // }
+
+    // catch (rpc::rpc_error& e) {
+    //     std::string msg = e.get_error().as<std::string>();
+    //     std::cout << "Exception raised by the API, didn't get image response." << std::endl
+    //               << msg << std::endl;
+    // }
 }
 
 void AirsimNEDWrapper::lidar_timer_cb(const ros::TimerEvent& event)
@@ -1436,18 +1447,12 @@ sensor_msgs::CameraInfo AirsimNEDWrapper::generate_cam_info(const std::string& c
 void AirsimNEDWrapper::process_and_publish_img_response(const std::vector<ImageResponse>& img_response_vec, const int img_response_idx, const std::string& vehicle_name)
 {
     // todo add option to use airsim time (image_response.TTimePoint) like Gazebo /use_sim_time param
-    ros::Time curr_ros_time = ros::Time(0);
+    // ros::Time curr_ros_time = ros::Time(0);
     int img_response_idx_internal = img_response_idx;
 
     for (const auto& curr_img_response : img_response_vec) {
-        // todo publishing a tf for each capture type seems stupid. but it foolproofs us against render thread's async stuff, I hope.
-        // Ideally, we should loop over cameras and then captures, and publish only one tf.
-        // publish_camera_tf(curr_img_response, curr_ros_time, vehicle_name, curr_img_response.camera_name);
-
-        // todo simGetCameraInfo is wrong + also it's only for image type -1.
-        // msr::airlib::CameraInfo camera_info = airsim_client_.simGetCameraInfo(curr_img_response.camera_name);
-
         // update timestamp of saved cam info msgs
+        ros::Time curr_ros_time = airsim_timestamp_to_ros(curr_img_response.time_stamp);
 
         camera_info_msg_vec_[img_response_idx_internal].header.stamp = curr_ros_time;// airsim_timestamp_to_ros(curr_img_response.time_stamp);
         cam_info_pub_vec_[img_response_idx_internal].publish(camera_info_msg_vec_[img_response_idx_internal]);
