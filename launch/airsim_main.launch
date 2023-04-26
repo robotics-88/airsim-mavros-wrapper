@@ -23,7 +23,7 @@
         <param name="update_airsim_img_response_every_n_sec" value="$(arg image_pub_freq)" />
         <param name="update_lidar_every_n_sec" value="$(arg lidar_pub_freq)" />
         <param name="update_airsim_control_every_n_sec" value="$(arg control_pub_freq)" />
-        <param name="vehicle_frame_id" value="$(arg vehicle_frame)_frd" />
+        <param name="vehicle_frame_id" value="Copter" />
         <param name="odom_frame_id" value="$(arg odom_frame)_ned" />
         <param name="map_frame_id" value="$(arg map_frame)_ned" />
         <param name="world_frame_id" value="$(arg world_frame)_ned" />
