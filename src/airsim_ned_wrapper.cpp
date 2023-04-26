@@ -1250,7 +1250,7 @@ void AirsimNEDWrapper::append_static_vehicle_tf(VehicleROS* vehicle_ros, const V
     geometry_msgs::TransformStamped vehicle_tf_msg;
     vehicle_tf_msg.header.frame_id = world_frame_id_;
     vehicle_tf_msg.header.stamp = ros::Time(0);
-    vehicle_tf_msg.child_frame_id = vehicle_ros->vehicle_name;
+    vehicle_tf_msg.child_frame_id = map_frame_id_;
     vehicle_tf_msg.transform.translation.x = vehicle_setting.position.x();
     vehicle_tf_msg.transform.translation.y = vehicle_setting.position.y();
     vehicle_tf_msg.transform.translation.z = vehicle_setting.position.z();

@@ -272,7 +272,7 @@ private:
 
     /// ROS tf broadcasters
     void publish_camera_tf(const ImageResponse& img_response, const ros::Time& ros_time, const std::string& frame_id, const std::string& child_frame_id);
-    void publish_odom_tf(const nav_msgs::Odometry& odom_msg);
+    void publish_vehicle_tf(const nav_msgs::Odometry& odom_msg);
 
     /// camera helper methods
     sensor_msgs::CameraInfo generate_cam_info(const std::string& camera_name, const CameraSetting& camera_setting, const CaptureSetting& capture_setting) const;
@@ -372,11 +372,15 @@ private:
     // GimbalCmd gimbal_cmd_;
 
     /// ROS tf
+    std::string odom_frame_id_;
+    std::string world_frame_id_;
+    std::string map_frame_id_;
+    std::string vehicle_frame_id_;
     const std::string AIRSIM_FRAME_ID = "world_ned";
-    std::string world_frame_id_ = AIRSIM_FRAME_ID;
+    // std::string world_frame_id_ = AIRSIM_FRAME_ID;
     const std::string AIRSIM_ODOM_FRAME_ID = "odom_local_ned";
     const std::string ENU_ODOM_FRAME_ID = "odom_local_enu";
-    std::string odom_frame_id_ = AIRSIM_ODOM_FRAME_ID;
+    // std::string odom_frame_id_ = AIRSIM_ODOM_FRAME_ID;
     tf2_ros::TransformBroadcaster tf_broadcaster_;
     tf2_ros::StaticTransformBroadcaster static_tf_pub_;
 
