@@ -9,7 +9,7 @@
     "Altitude": 583
   },
   "Vehicles": {
-    "Copter": {
+    "base_link_frd": {
       "VehicleType": "ArduCopter",
       "UseSerial": false,
       "LocalHostIp": "127.0.0.1",
@@ -53,8 +53,8 @@
           "HorizontalFOVEnd": 359,
           "DataFrame": "SensorLocalFrame",
           "ExternalController": false,
-          "X": 0.1, "Y": 0, "Z": -0.1,
-          "Roll": 0, "Pitch": 0, "Yaw" : 0
+          "X": 0, "Y": 0, "Z": -0.1,
+          "Roll": 180, "Pitch": 0, "Yaw" : 0
         }
       },
       "Cameras": {

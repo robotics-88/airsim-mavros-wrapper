@@ -1106,7 +1106,7 @@ void AirsimNEDWrapper::publish_vehicle_state()
 
         // odom and transforms
         vehicle_ros->odom_local_pub.publish(vehicle_ros->curr_odom);
-        publish_vehicle_tf(vehicle_ros->curr_odom);
+        // publish_vehicle_tf(vehicle_ros->curr_odom);
 
         // ground truth GPS position from sim/HITL
         vehicle_ros->global_gps_pub.publish(vehicle_ros->gps_sensor_msg);
@@ -1246,29 +1246,30 @@ void AirsimNEDWrapper::set_nans_to_zeros_in_pose(const VehicleSetting& vehicle_s
 
 void AirsimNEDWrapper::append_static_vehicle_tf(VehicleROS* vehicle_ros, const VehicleSetting& vehicle_setting)
 {
-    // TODO delete this? or is it supposed to be the tf from world to map?
-    geometry_msgs::TransformStamped vehicle_tf_msg;
-    vehicle_tf_msg.header.frame_id = world_frame_id_;
-    vehicle_tf_msg.header.stamp = ros::Time(0);
-    vehicle_tf_msg.child_frame_id = map_frame_id_;
-    vehicle_tf_msg.transform.translation.x = vehicle_setting.position.x();
-    vehicle_tf_msg.transform.translation.y = vehicle_setting.position.y();
-    vehicle_tf_msg.transform.translation.z = vehicle_setting.position.z();
-    tf2::Quaternion quat;
-    quat.setRPY(vehicle_setting.rotation.roll, vehicle_setting.rotation.pitch, vehicle_setting.rotation.yaw);
-    vehicle_tf_msg.transform.rotation.x = quat.x();
-    vehicle_tf_msg.transform.rotation.y = quat.y();
-    vehicle_tf_msg.transform.rotation.z = quat.z();
-    vehicle_tf_msg.transform.rotation.w = quat.w();
+    // ROS_INFO("entered create static vehicle tf");
+    // // TODO delete this? or is it supposed to be the tf from world to map? obvy vehicle static pose makes no sense.
+    // geometry_msgs::TransformStamped vehicle_tf_msg;
+    // vehicle_tf_msg.header.frame_id = world_frame_id_;
+    // vehicle_tf_msg.header.stamp = ros::Time(0);
+    // vehicle_tf_msg.child_frame_id = map_frame_id_;
+    // vehicle_tf_msg.transform.translation.x = vehicle_setting.position.x();
+    // vehicle_tf_msg.transform.translation.y = vehicle_setting.position.y();
+    // vehicle_tf_msg.transform.translation.z = vehicle_setting.position.z();
+    // tf2::Quaternion quat;
+    // quat.setRPY(vehicle_setting.rotation.roll, vehicle_setting.rotation.pitch, vehicle_setting.rotation.yaw);
+    // vehicle_tf_msg.transform.rotation.x = quat.x();
+    // vehicle_tf_msg.transform.rotation.y = quat.y();
+    // vehicle_tf_msg.transform.rotation.z = quat.z();
+    // vehicle_tf_msg.transform.rotation.w = quat.w();
 
-    if (isENU_) {
-        std::swap(vehicle_tf_msg.transform.translation.x, vehicle_tf_msg.transform.translation.y);
-        std::swap(vehicle_tf_msg.transform.rotation.x, vehicle_tf_msg.transform.rotation.y);
-        vehicle_tf_msg.transform.translation.z = -vehicle_tf_msg.transform.translation.z;
-        vehicle_tf_msg.transform.rotation.z = -vehicle_tf_msg.transform.rotation.z;
-    }
+    // if (isENU_) {
+    //     std::swap(vehicle_tf_msg.transform.translation.x, vehicle_tf_msg.transform.translation.y);
+    //     std::swap(vehicle_tf_msg.transform.rotation.x, vehicle_tf_msg.transform.rotation.y);
+    //     vehicle_tf_msg.transform.translation.z = -vehicle_tf_msg.transform.translation.z;
+    //     vehicle_tf_msg.transform.rotation.z = -vehicle_tf_msg.transform.rotation.z;
+    // }
 
-    vehicle_ros->static_tf_msg_vec.emplace_back(vehicle_tf_msg);
+    // vehicle_ros->static_tf_msg_vec.emplace_back(vehicle_tf_msg);
 }
 
 void AirsimNEDWrapper::append_static_lidar_tf(VehicleROS* vehicle_ros, const std::string& lidar_name, const msr::airlib::LidarSimpleParams& lidar_setting)

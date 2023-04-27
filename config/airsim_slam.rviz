@@ -7,7 +7,6 @@ Panels:
         - /Global Options1
         - /Status1
         - /TF1/Frames1
-        - /Map1/Status1
         - /SafeZone1
       Splitter Ratio: 0.5
     Tree Height: 677
@@ -56,7 +55,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/Image
       Enabled: true
-      Image Topic: /airsim_ros_node/Copter/front_left_custom/DepthPlanar
+      Image Topic: /airsim_ros_node/base_link_frd/front_left_custom/DepthPlanar
       Max Value: 1
       Median window: 5
       Min Value: 0
@@ -68,7 +67,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/Image
       Enabled: true
-      Image Topic: /airsim_ros_node/Copter/front_left_custom/Scene
+      Image Topic: /airsim_ros_node/base_link_frd/front_left_custom/Scene
       Max Value: 1
       Median window: 5
       Min Value: 0
@@ -80,17 +79,19 @@ Visualization Manager:
       Value: true
     - Class: rviz/TF
       Enabled: true
+      Filter (blacklist): ""
+      Filter (whitelist): ""
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        Copter/Lidar1:
-          Value: false
-        Copter/Lidar2:
-          Value: true
         base_link:
           Value: true
         base_link_frd:
           Value: false
+        base_link_frd/Lidar1:
+          Value: true
+        base_link_frd/Lidar2:
+          Value: true
         front_center_custom_body:
           Value: true
         front_center_custom_optical:
@@ -111,6 +112,10 @@ Visualization Manager:
           Value: true
         odom_ned:
           Value: false
+        world:
+          Value: true
+        world_ned:
+          Value: true
       Marker Alpha: 1
       Marker Scale: 1
       Name: TF
@@ -119,26 +124,32 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
+          base_link:
+            base_link_frd:
+              base_link_frd/Lidar1:
+                {}
+              base_link_frd/Lidar2:
+                {}
+              front_center_custom_body:
+                {}
+              front_center_custom_optical:
+                {}
+              front_left_custom_body:
+                {}
+              front_left_custom_optical:
+                {}
+              front_right_custom_body:
+                {}
+              front_right_custom_optical:
+                {}
           map_ned:
             {}
-          odom:
-            base_link:
-              base_link_frd:
-                Copter/Lidar1:
-                  {}
-                Copter/Lidar2:
-                  {}
-              front_center_custom_body:
-                front_center_custom_optical:
-                  {}
-              front_left_custom_body:
-                front_left_custom_optical:
-                  {}
-              front_right_custom_body:
-                front_right_custom_optical:
-                  {}
-            odom_ned:
-              {}
+        odom:
+          odom_ned:
+            {}
+        world_ned:
+          world:
+            {}
       Update Interval: 0
       Value: true
     - Alpha: 0.699999988079071
@@ -231,7 +242,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.009999999776482582
       Style: Flat Squares
-      Topic: /airsim_ros_node/Copter/lidar/Lidar2
+      Topic: /airsim_ros_node/base_link_frd/lidar/Lidar2
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -264,7 +275,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 11.772971153259277
+      Distance: 26.07790756225586
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
