@@ -763,7 +763,7 @@ nav_msgs::Odometry AirsimNEDWrapper::get_odom_msg_from_multirotor_state(const ms
 sensor_msgs::PointCloud2 AirsimNEDWrapper::get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data, const std::string& vehicle_name, const std::string& sensor_name) const
 {
     sensor_msgs::PointCloud2 lidar_msg;
-    lidar_msg.header.stamp = ros::Time(0);
+    lidar_msg.header.stamp = ros::Time::now();
     lidar_msg.header.frame_id = vehicle_name + "/" + sensor_name;
 
     if (lidar_data.point_cloud.size() > 3) {
@@ -794,22 +794,22 @@ sensor_msgs::PointCloud2 AirsimNEDWrapper::get_lidar_msg_from_airsim(const msr::
         std::vector<unsigned char> lidar_msg_data(bytes, bytes + sizeof(float) * data_std.size());
         lidar_msg.data = std::move(lidar_msg_data);
 
-        if (isENU_) {
-            try {
-                sensor_msgs::PointCloud2 lidar_msg_enu;
-                auto transformStampedENU = tf_buffer_.lookupTransform(AIRSIM_FRAME_ID, vehicle_name, ros::Time(0), ros::Duration(1));
-                tf2::doTransform(lidar_msg, lidar_msg_enu, transformStampedENU);
+        // if (isENU_) {
+        //     try {
+        //         sensor_msgs::PointCloud2 lidar_msg_enu;
+        //         auto transformStampedENU = tf_buffer_.lookupTransform(AIRSIM_FRAME_ID, vehicle_name, ros::Time(0), ros::Duration(1));
+        //         tf2::doTransform(lidar_msg, lidar_msg_enu, transformStampedENU);
 
-                lidar_msg_enu.header.stamp = lidar_msg.header.stamp;
-                lidar_msg_enu.header.frame_id = lidar_msg.header.frame_id;
+        //         lidar_msg_enu.header.stamp = lidar_msg.header.stamp;
+        //         lidar_msg_enu.header.frame_id = lidar_msg.header.frame_id;
 
-                lidar_msg = std::move(lidar_msg_enu);
-            }
-            catch (tf2::TransformException& ex) {
-                ROS_WARN("%s", ex.what());
-                ros::Duration(1.0).sleep();
-            }
-        }
+        //         lidar_msg = std::move(lidar_msg_enu);
+        //     }
+        //     catch (tf2::TransformException& ex) {
+        //         ROS_WARN("%s", ex.what());
+        //         ros::Duration(1.0).sleep();
+        //     }
+        // }
     }
     else {
         // msg = []
@@ -1024,7 +1024,7 @@ void AirsimNEDWrapper::update_and_publish_static_transforms(VehicleROS* vehicle_
 ros::Time AirsimNEDWrapper::update_state()
 {
     bool got_sim_time = false;
-    ros::Time curr_ros_time = ros::Time(0);
+    ros::Time curr_ros_time = ros::Time::now();
 
     //should be easier way to get the sim time through API, something like:
     //msr::airlib::Environment::State env = airsim_client_->simGetGroundTruthEnvironment("");
@@ -1032,7 +1032,7 @@ ros::Time AirsimNEDWrapper::update_state()
 
     // iterate over drones
     for (auto& vehicle_name_ptr_pair : vehicle_name_ptr_map_) {
-        ros::Time vehicle_time;
+        // ros::Time vehicle_time;
         // get drone state from airsim
         auto& vehicle_ros = vehicle_name_ptr_pair.second;
 
@@ -1043,14 +1043,14 @@ ros::Time AirsimNEDWrapper::update_state()
             auto drone = static_cast<MultiRotorROS*>(vehicle_ros.get());
             drone->curr_drone_state = get_multirotor_client()->getMultirotorState(vehicle_ros->vehicle_name);
 
-            vehicle_time = airsim_timestamp_to_ros(drone->curr_drone_state.timestamp);
-            if (!got_sim_time) {
-                curr_ros_time = vehicle_time;
-                got_sim_time = true;
-            }
+            // vehicle_time = airsim_timestamp_to_ros(drone->curr_drone_state.timestamp);
+            // if (!got_sim_time) {
+            //     curr_ros_time = vehicle_time;
+            //     got_sim_time = true;
+            // }
 
             vehicle_ros->gps_sensor_msg = get_gps_sensor_msg_from_airsim_geo_point(drone->curr_drone_state.gps_location);
-            vehicle_ros->gps_sensor_msg.header.stamp = vehicle_time;
+            vehicle_ros->gps_sensor_msg.header.stamp = curr_ros_time;
 
             vehicle_ros->curr_odom = get_odom_msg_from_multirotor_state(drone->curr_drone_state);
         }
@@ -1074,7 +1074,7 @@ ros::Time AirsimNEDWrapper::update_state()
             // car->car_state_msg = state_msg;
         }
 
-        vehicle_ros->stamp = vehicle_time;
+        vehicle_ros->stamp = curr_ros_time;
 
         // airsim_ros_pkgs::Environment env_msg = get_environment_msg_from_airsim(env_data);
         // env_msg.header.frame_id = vehicle_ros->vehicle_name;
@@ -1084,7 +1084,7 @@ ros::Time AirsimNEDWrapper::update_state()
         // convert airsim drone state to ROS msgs
         vehicle_ros->curr_odom.header.frame_id = map_frame_id_;
         vehicle_ros->curr_odom.child_frame_id = vehicle_frame_id_;
-        vehicle_ros->curr_odom.header.stamp = vehicle_time;
+        vehicle_ros->curr_odom.header.stamp = curr_ros_time;
     }
 
     return curr_ros_time;
@@ -1250,7 +1250,7 @@ void AirsimNEDWrapper::append_static_vehicle_tf(VehicleROS* vehicle_ros, const V
     // // TODO delete this? or is it supposed to be the tf from world to map? obvy vehicle static pose makes no sense.
     // geometry_msgs::TransformStamped vehicle_tf_msg;
     // vehicle_tf_msg.header.frame_id = world_frame_id_;
-    // vehicle_tf_msg.header.stamp = ros::Time(0);
+    // vehicle_tf_msg.header.stamp = ros::Time::now();
     // vehicle_tf_msg.child_frame_id = map_frame_id_;
     // vehicle_tf_msg.transform.translation.x = vehicle_setting.position.x();
     // vehicle_tf_msg.transform.translation.y = vehicle_setting.position.y();
