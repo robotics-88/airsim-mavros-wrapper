@@ -1,13 +1,13 @@
 <launch>
   <arg name="uav_frame" default="base_link"/>
   <arg name="map_frame" default="map"/>
+  <arg name="cloud_topic" default="/airsim_ros_node/base_link_frd/lidar/Lidar2"/>
+  <arg name="odom_topic" default="/mavros/local_position/odom"/>
 
   <!-- This node will launch MAVROS -->
   <!-- <include file="$(find mavros)/launch/px4.launch"/> -->
 
-  <node  pkg="rviz" type="rviz" name="rviz" args="-d $(find path_planning)/launch/demo.rviz" />
-
-  <arg name="cloud_topic" default="/airsim_ros_node/base_link_frd/lidar/Lidar2"/>
+  <node  pkg="rviz" type="rviz" name="rviz" args="-d $(find airsim_launch)/config/oa.rviz" />
 
   <arg name="max_tau" default="0.6"/>
   <arg name="init_max_tau" default="0.8"/>
@@ -26,6 +26,7 @@
     <param name="uav_frame" type="string" value="$(arg uav_frame)"/>
 		<param name="map_frame" type="string" value="$(arg map_frame)"/>
 		<param name="cloud_topic" type="string" value="$(arg cloud_topic)"/>
+		<param name="odom_topic" type="string" value="$(arg odom_topic)"/>
 
     <param name="search/max_tau" value="$(arg max_tau)"/>
     <param name="search/init_max_tau" value="$(arg init_max_tau)"/>
