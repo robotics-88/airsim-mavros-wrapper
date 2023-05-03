@@ -1,0 +1,43 @@
+<launch>
+  <arg name="uav_frame" default="base_link"/>
+  <arg name="map_frame" default="map"/>
+
+  <!-- This node will launch MAVROS -->
+  <!-- <include file="$(find mavros)/launch/px4.launch"/> -->
+
+  <node  pkg="rviz" type="rviz" name="rviz" args="-d $(find path_planning)/launch/demo.rviz" />
+
+  <arg name="cloud_topic" default="/airsim_ros_node/base_link_frd/lidar/Lidar2"/>
+
+  <arg name="max_tau" default="0.6"/>
+  <arg name="init_max_tau" default="0.8"/>
+  <arg name="max_vel" default="2.0"/>
+  <arg name="max_acc" default="2.0"/>
+  <arg name="w_time" default="10.0"/>
+  <arg name="horizon" default="100.0"/>
+  <arg name="lambda_heu" default="5.0"/>
+  <arg name="resolution_astar" default="0.1"/>
+  <arg name="time_resolution" default="0.8"/>
+  <arg name="margin" default="0.2"/>
+  <arg name="allocate_num" default="100000"/>
+  <arg name="check_num" default="1"/>
+
+  <node  pkg="path_planning" type="path_planning_node" name="path_planning_node1" args="" output="screen">
+    <param name="uav_frame" type="string" value="$(arg uav_frame)"/>
+		<param name="map_frame" type="string" value="$(arg map_frame)"/>
+		<param name="cloud_topic" type="string" value="$(arg cloud_topic)"/>
+
+    <param name="search/max_tau" value="$(arg max_tau)"/>
+    <param name="search/init_max_tau" value="$(arg init_max_tau)"/>
+    <param name="search/max_vel" value="$(arg max_vel)"/>
+    <param name="search/max_acc" value="$(arg max_acc)"/>
+    <param name="search/w_time" value="$(arg w_time)"/>
+    <param name="search/horizon" value="$(arg horizon)"/>
+    <param name="search/lambda_heu" value="$(arg lambda_heu)"/>
+    <param name="search/resolution_astar" value="$(arg resolution_astar)"/>
+    <param name="search/time_resolution" value="$(arg time_resolution)"/>
+    <param name="search/margin" value="$(arg margin)"/>
+    <param name="search/allocate_num" value="$(arg allocate_num)"/>
+    <param name="search/check_num" value="$(arg check_num)"/>
+  </node> 
+</launch>
