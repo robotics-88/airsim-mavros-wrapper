@@ -1,9 +1,12 @@
 <launch>
     <arg name="vehicle_name" default="/airsim_ros_node/base_link_frd"/>
-    <arg name="vehicle_frame" default="base_link"/>
+    <arg name="vehicle_frame" default="base_link_frd"/>
     <arg name="odom_frame" default="odom"/>
-    <arg name="map_frame" default="map"/>
+    <arg name="map_frame" default="map_ned"/>
     <arg name="world_frame" default="world"/>
+
+    <arg name="raw_lidar_topic" value="$(arg vehicle_name)/lidar/Lidar2"/>
+    <arg name="registered_lidar_topic" value="/velodyne_cloud_registered"/>
 
     <arg name="ardupilot" default="true"/>
 
@@ -23,9 +26,9 @@
         <param name="update_airsim_img_response_every_n_sec" value="$(arg image_pub_freq)" />
         <param name="update_lidar_every_n_sec" value="$(arg lidar_pub_freq)" />
         <param name="update_airsim_control_every_n_sec" value="$(arg control_pub_freq)" />
-        <param name="vehicle_frame_id" value="$(arg vehicle_frame)_frd" />
+        <param name="vehicle_frame_id" value="$(arg vehicle_frame)" />
         <param name="odom_frame_id" value="$(arg odom_frame)_ned" />
-        <param name="map_frame_id" value="$(arg map_frame)_ned" />
+        <param name="map_frame_id" value="$(arg map_frame)" />
         <param name="world_frame_id" value="$(arg world_frame)_ned" />
     </node>
 
@@ -36,18 +39,21 @@
         <param name="depth_info" value="$(arg depth_info)"/>
     </node>
 
-    <include file="$(find aloam_velodyne)/launch/aloam_velodyne_VLP_16.launch">
+    <!-- <include file="$(find aloam_velodyne)/launch/aloam_velodyne_VLP_16.launch">
         <arg name="map_frame" value="$(arg map_frame)"/>
         <arg name="uav_frame" value="$(arg vehicle_frame)"/>
         <arg name="cloud_topic" value="$(arg vehicle_name)/lidar/Lidar2"/>
-    </include>
+    </include> -->
 
     <!-- takes cloud output of aloam  -->
     <include file="$(find octomap_slice)/launch/octomap_full_handling.launch">
-        <arg name="cloud_topic" value="/velodyne_cloud_registered"/>
+        <!-- <arg name="cloud_topic" value="/velodyne_cloud_registered"/> -->
+        <arg name="cloud_topic" value="$(arg raw_lidar_topic)"/>
     </include>
 
-    <include file="$(find airsim_launch)/launch/airsim_explore.launch"/>
+    <include file="$(find airsim_launch)/launch/airsim_explore.launch">
+        <arg name="robot_base_frame" value="$(arg vehicle_frame)"/>
+    </include>
     <include file="$(find monarch)/launch/monarch.launch">
         <arg name="ardupilot" value="$(arg ardupilot)" />
     </include>
