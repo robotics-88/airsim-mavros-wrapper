@@ -45,6 +45,8 @@
         <arg name="cloud_topic" value="$(arg vehicle_name)/lidar/Lidar2"/>
     </include> -->
 
+    <include file="$(find airsim_launch)/launch/airsim_oa.launch"/>
+
     <!-- takes cloud output of aloam  -->
     <include file="$(find octomap_slice)/launch/octomap_full_handling.launch">
         <!-- <arg name="cloud_topic" value="/velodyne_cloud_registered"/> -->

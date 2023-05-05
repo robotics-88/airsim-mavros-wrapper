@@ -1,5 +1,5 @@
 common:
-    lid_topic:  "/airsim_ros_node/Copter/lidar/Lidar2"
+    lid_topic:  "/airsim_ros_node/base_link_frd/lidar/Lidar2"
     imu_topic:  "/mavros/imu/data"
     time_sync_en: false         # ONLY turn on when external time synchronization is really not possible
     time_offset_lidar_to_imu: 0.0 # Time offset between lidar and IMU calibrated by other algorithms, e.g. LI-Init (can be found in README).

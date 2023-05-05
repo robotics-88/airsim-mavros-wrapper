@@ -1,8 +1,21 @@
 <launch>
   <arg name="uav_frame" default="base_link"/>
   <arg name="map_frame" default="map"/>
-  <arg name="cloud_topic" default="/airsim_ros_node/base_link_frd/lidar/Lidar2"/>
-  <arg name="odom_topic" default="/mavros/local_position/odom"/>
+  <arg name="raw_cloud_topic" default="/airsim_ros_node/base_link_frd/lidar/Lidar2"/>
+  <arg name="reg_cloud_topic" default="/cloud_registered"/>
+	<arg name="imu_topic" default="/mavros/imu/data"/>
+  <arg name="odom_topic" default="/mavros/odometry/out"/>
+  <arg name="lidar_type" default="2"/>
+
+  <include file="$(find fast_lio)/launch/mapping_avia.launch">
+    <arg name="uav_frame" value="$(arg uav_frame)"/>
+		<arg name="map_frame" value="$(arg map_frame)"/>
+		<arg name="raw_cloud_topic" value="$(arg raw_cloud_topic)"/>
+		<arg name="reg_cloud_topic" value="$(arg reg_cloud_topic)"/>
+		<arg name="imu_topic" value="$(arg imu_topic)"/>
+    <arg name="odom_topic" value="$(arg odom_topic)"/>
+    <arg name="lidar_type" value="$(arg lidar_type)"/>
+  </include>
 
   <!-- This node will launch MAVROS -->
   <!-- <include file="$(find mavros)/launch/px4.launch"/> -->
@@ -22,10 +35,10 @@
   <arg name="allocate_num" default="100000"/>
   <arg name="check_num" default="1"/>
 
-  <node  pkg="path_planning" type="path_planning_node" name="path_planning_node1" args="" output="screen">
+  <node  pkg="path_planning" type="path_planning_node" name="path_planning_node1" args="" output="log">
     <param name="uav_frame" type="string" value="$(arg uav_frame)"/>
 		<param name="map_frame" type="string" value="$(arg map_frame)"/>
-		<param name="cloud_topic" type="string" value="$(arg cloud_topic)"/>
+		<param name="cloud_topic" type="string" value="$(arg reg_cloud_topic)"/>
 		<param name="odom_topic" type="string" value="$(arg odom_topic)"/>
 
     <param name="search/max_tau" value="$(arg max_tau)"/>
