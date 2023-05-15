@@ -6,7 +6,7 @@
     <arg name="world_frame" default="world"/>
 
     <arg name="raw_lidar_topic" value="$(arg vehicle_name)/lidar/Lidar2"/>
-    <arg name="registered_lidar_topic" value="/velodyne_cloud_registered"/>
+    <arg name="registered_lidar_topic" value="/cloud_registered"/>
 
     <arg name="ardupilot" default="true"/>
 
@@ -47,10 +47,12 @@
 
     <include file="$(find airsim_launch)/launch/airsim_oa.launch"/>
 
-    <!-- takes cloud output of aloam  -->
+    <node pkg="path_to_mavros" type="path_to_mavros_node" respawn="false" name="path_to_mavros" output="screen"/>
+
+    <!-- takes cloud output of SLAM  -->
     <include file="$(find octomap_slice)/launch/octomap_full_handling.launch">
-        <!-- <arg name="cloud_topic" value="/velodyne_cloud_registered"/> -->
-        <arg name="cloud_topic" value="$(arg raw_lidar_topic)"/>
+        <arg name="cloud_topic" value="$(arg registered_lidar_topic)"/>
+        <!-- <arg name="cloud_topic" value="$(arg raw_lidar_topic)"/> -->
     </include>
 
     <include file="$(find airsim_launch)/launch/airsim_explore.launch">
