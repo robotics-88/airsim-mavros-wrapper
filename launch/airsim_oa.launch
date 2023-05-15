@@ -6,6 +6,7 @@
 	<arg name="imu_topic" default="/mavros/imu/data"/>
   <arg name="odom_topic" default="/mavros/odometry/out"/>
   <arg name="lidar_type" default="2"/>
+  <arg name="N_SCANS" default="16"/>
 
   <include file="$(find fast_lio)/launch/mapping_avia.launch">
     <arg name="uav_frame" value="$(arg uav_frame)"/>
@@ -15,6 +16,7 @@
 		<arg name="imu_topic" value="$(arg imu_topic)"/>
     <arg name="odom_topic" value="$(arg odom_topic)"/>
     <arg name="lidar_type" value="$(arg lidar_type)"/>
+    <arg name="N_SCANS" value="$(arg N_SCANS)"/>
   </include>
 
   <!-- This node will launch MAVROS -->
