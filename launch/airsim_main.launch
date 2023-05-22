@@ -1,4 +1,7 @@
 <launch>
+    <arg name="enable_autonomy" default="true"/>
+    <arg name="enable_exploration" default="true"/>
+
     <arg name="vehicle_name" default="/airsim_ros_node/base_link_frd"/>
     <arg name="vehicle_frame" default="base_link_frd"/>
     <arg name="odom_frame" default="odom"/>
@@ -59,8 +62,12 @@
         <arg name="robot_base_frame" value="$(arg vehicle_frame)"/>
     </include>
     <include file="$(find monarch)/launch/monarch.launch">
-        <arg name="ardupilot" value="$(arg ardupilot)" />
+        <!-- <arg name="ardupilot" value="$(arg ardupilot)" /> -->
+        <arg name="enable_autonomy" value="$(arg enable_autonomy)"/>
+        <arg name="enable_exploration" value="$(arg enable_exploration)"/>
     </include>
+
+    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
 
     <node type="rviz" name="airsim_rviz" pkg="rviz" args="-d $(find airsim_launch)/config/airsim_slam.rviz" output="log"/>
 </launch>

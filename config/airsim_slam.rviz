@@ -7,6 +7,7 @@ Panels:
         - /Global Options1
         - /Status1
         - /TF1/Frames1
+        - /Frontiers1/Status1
       Splitter Ratio: 0.5
     Tree Height: 677
   - Class: rviz/Selection
@@ -178,7 +179,7 @@ Visualization Manager:
       Marker Topic: /explore/frontiers
       Name: Frontiers
       Namespaces:
-        {}
+        frontiers: true
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -249,8 +250,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: -0.29768872261047363
-        Min Value: -0.29779818654060364
+        Max Value: 18.04491424560547
+        Min Value: -1.0935994386672974
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -302,6 +303,14 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /explore/frontier_goal_marker
+      Name: GoalMarker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -330,7 +339,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 17.771364212036133
+      Distance: 89.71475219726562
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -346,9 +355,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.41539767384529114
+      Pitch: 0.7503982186317444
       Target Frame: <Fixed Frame>
-      Yaw: 4.875394821166992
+      Yaw: 0.9453980326652527
     Saved: ~
 Window Geometry:
   Depth:
