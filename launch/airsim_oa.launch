@@ -28,6 +28,8 @@
   <arg name="init_max_tau" default="0.8"/>
   <arg name="max_vel" default="2.0"/>
   <arg name="max_acc" default="2.0"/>
+  <arg name="min_alt" default="1.0"/>
+  <arg name="max_alt" default="5.0"/>
   <arg name="w_time" default="10.0"/>
   <arg name="horizon" default="100.0"/>
   <arg name="lambda_heu" default="5.0"/>
@@ -36,6 +38,7 @@
   <arg name="vel_margin" default="0.2"/>
   <arg name="allocate_num" default="100000"/>
   <arg name="check_num" default="1"/>
+  <arg name="min_safe_dist" default="1.0"/>
 
   <node  pkg="path_planning" type="path_planning_node" name="path_planning_node1" args="" output="log">
     <param name="uav_frame" type="string" value="$(arg uav_frame)"/>
@@ -47,6 +50,8 @@
     <param name="init_max_tau" value="$(arg init_max_tau)"/>
     <param name="max_vel" value="$(arg max_vel)"/>
     <param name="max_acc" value="$(arg max_acc)"/>
+    <param name="min_alt" value="$(arg min_alt)"/>
+    <param name="max_alt" value="$(arg max_alt)"/>
     <param name="w_time" value="$(arg w_time)"/>
     <param name="horizon" value="$(arg horizon)"/>
     <param name="lambda_heu" value="$(arg lambda_heu)"/>
@@ -55,5 +60,6 @@
     <param name="vel_margin" value="$(arg vel_margin)"/>
     <param name="allocate_num" value="$(arg allocate_num)"/>
     <param name="check_num" value="$(arg check_num)"/>
+    <param name="min_safe_dist" value="$(arg min_safe_dist)"/>
   </node> 
 </launch>
