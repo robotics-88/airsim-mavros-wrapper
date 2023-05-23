@@ -33,7 +33,7 @@
   <arg name="lambda_heu" default="5.0"/>
   <arg name="resolution_astar" default="0.1"/>
   <arg name="time_resolution" default="0.8"/>
-  <arg name="margin" default="0.2"/>
+  <arg name="vel_margin" default="0.2"/>
   <arg name="allocate_num" default="100000"/>
   <arg name="check_num" default="1"/>
 
@@ -52,7 +52,7 @@
     <param name="search/lambda_heu" value="$(arg lambda_heu)"/>
     <param name="search/resolution_astar" value="$(arg resolution_astar)"/>
     <param name="search/time_resolution" value="$(arg time_resolution)"/>
-    <param name="search/margin" value="$(arg margin)"/>
+    <param name="search/vel_margin" value="$(arg vel_margin)"/>
     <param name="search/allocate_num" value="$(arg allocate_num)"/>
     <param name="search/check_num" value="$(arg check_num)"/>
   </node> 
