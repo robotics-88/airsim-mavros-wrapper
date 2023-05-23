@@ -43,17 +43,17 @@
 		<param name="cloud_topic" type="string" value="$(arg reg_cloud_topic)"/>
 		<param name="odom_topic" type="string" value="$(arg odom_topic)"/>
 
-    <param name="search/max_tau" value="$(arg max_tau)"/>
-    <param name="search/init_max_tau" value="$(arg init_max_tau)"/>
-    <param name="search/max_vel" value="$(arg max_vel)"/>
-    <param name="search/max_acc" value="$(arg max_acc)"/>
-    <param name="search/w_time" value="$(arg w_time)"/>
-    <param name="search/horizon" value="$(arg horizon)"/>
-    <param name="search/lambda_heu" value="$(arg lambda_heu)"/>
-    <param name="search/resolution_astar" value="$(arg resolution_astar)"/>
-    <param name="search/time_resolution" value="$(arg time_resolution)"/>
-    <param name="search/vel_margin" value="$(arg vel_margin)"/>
-    <param name="search/allocate_num" value="$(arg allocate_num)"/>
-    <param name="search/check_num" value="$(arg check_num)"/>
+    <param name="max_tau" value="$(arg max_tau)"/>
+    <param name="init_max_tau" value="$(arg init_max_tau)"/>
+    <param name="max_vel" value="$(arg max_vel)"/>
+    <param name="max_acc" value="$(arg max_acc)"/>
+    <param name="w_time" value="$(arg w_time)"/>
+    <param name="horizon" value="$(arg horizon)"/>
+    <param name="lambda_heu" value="$(arg lambda_heu)"/>
+    <param name="resolution_astar" value="$(arg resolution_astar)"/>
+    <param name="time_resolution" value="$(arg time_resolution)"/>
+    <param name="vel_margin" value="$(arg vel_margin)"/>
+    <param name="allocate_num" value="$(arg allocate_num)"/>
+    <param name="check_num" value="$(arg check_num)"/>
   </node> 
 </launch>
