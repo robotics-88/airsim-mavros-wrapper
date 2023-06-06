@@ -29,6 +29,7 @@
     <arg name="max_alt" default="10.0"/>
     <arg name="default_alt" default="2.0"/> <!-- Must be between min/max or path planning fails -->
     <arg name="default_speed" default="2.0"/> <!-- m/s-->
+    <arg name="goal_topic" default="/goal"/> <!-- for mavros without OA, use /mavros/setpoint_position/local-->
 
     <!-- <param name="/use_sim_time" value="true"/> -->
 
@@ -70,6 +71,7 @@
     <include file="$(find explore_uav)/launch/explore.launch">
         <arg name="robot_base_frame" value="$(arg vehicle_frame)"/>
         <arg name="default_alt" value="$(arg default_alt)"/>
+        <arg name="goal_topic" value="$(arg goal_topic)"/>
     </include>
 
     <include file="$(find monarch)/launch/monarch.launch">
