@@ -18,11 +18,13 @@
     <arg name="ardupilot" default="true"/>
     <include file="$(find airsim_launch)/launch/airsim_ardupilot.launch" if="$(arg ardupilot)"/>
     <include file="$(find airsim_launch)/launch/airsim_px4.launch" unless="$(arg ardupilot)"/>
+    <node pkg="rosservice" type="rosservice" name="rosservice" args="call --wait /mavros/set_stream_rate 0 20 1"/>
 
     <!-- AirSim publish rates -->
-    <arg name="image_pub_freq" default=".1"/>
+    <arg name="image_pub_freq" default=".05"/>
     <arg name="lidar_pub_freq" default=".1"/>
-    <arg name="control_pub_freq" default=".01"/>
+    <arg name="control_pub_freq" default=".1"/>
+    <arg name="update_imu_n_sec" default=".01"/>
 
     <!-- Common control args -->
     <arg name="min_alt" default="0.2"/>

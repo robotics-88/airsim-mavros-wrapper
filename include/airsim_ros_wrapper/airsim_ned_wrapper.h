@@ -235,6 +235,7 @@ private:
 
     /// ROS timer callbacks
     void img_response_timer_cb(const ros::TimerEvent& event); // update images from airsim_client_ every nth sec
+    void drone_imu_timer_cb(const ros::TimerEvent& event);
     void drone_state_timer_cb(const ros::TimerEvent& event); // update drone state from airsim_client_ every nth sec
     void lidar_timer_cb(const ros::TimerEvent& event);
 
@@ -302,13 +303,15 @@ private:
     msr::airlib::Pose get_airlib_pose(const float& x, const float& y, const float& z, const msr::airlib::Quaternionr& airlib_quat) const;
     // airsim_ros_pkgs::GPSYaw get_gps_msg_from_airsim_geo_point(const msr::airlib::GeoPoint& geo_point) const;
     sensor_msgs::NavSatFix get_gps_sensor_msg_from_airsim_geo_point(const msr::airlib::GeoPoint& geo_point) const;
-    sensor_msgs::Imu get_imu_msg_from_airsim(const msr::airlib::ImuBase::Output& imu_data) const;
+    // sensor_msgs::Imu get_imu_msg_from_airsim(const msr::airlib::ImuBase::Output& imu_data) const;
     // airsim_ros_pkgs::Altimeter get_altimeter_msg_from_airsim(const msr::airlib::BarometerBase::Output& alt_data) const;
     sensor_msgs::Range get_range_from_airsim(const msr::airlib::DistanceSensorData& dist_data) const;
+    sensor_msgs::PointCloud2 get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data) const;
     sensor_msgs::PointCloud2 get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data, const std::string& vehicle_name, const std::string& sensor_name) const;
     sensor_msgs::NavSatFix get_gps_msg_from_airsim(const msr::airlib::GpsBase::Output& gps_data) const;
     sensor_msgs::MagneticField get_mag_msg_from_airsim(const msr::airlib::MagnetometerBase::Output& mag_data) const;
     // airsim_ros_pkgs::Environment get_environment_msg_from_airsim(const msr::airlib::Environment::State& env_data) const;
+    sensor_msgs::Imu get_imu_msg_from_airsim(const msr::airlib::ImuBase::Output& imu_data);
 
     // not used anymore, but can be useful in future with an unreal camera calibration environment
     // void read_params_from_yaml_and_fill_cam_info_msg(const std::string& file_name, sensor_msgs::CameraInfo& cam_info) const;
@@ -317,6 +320,10 @@ private:
     // simulation time utility
     ros::Time airsim_timestamp_to_ros(const msr::airlib::TTimePoint& stamp) const;
     ros::Time chrono_timestamp_to_ros(const std::chrono::system_clock::time_point& stamp) const;
+    ros::Time make_ts(uint64_t unreal_ts);
+    
+    ros::Time first_imu_ros_ts;
+    int64_t first_imu_unreal_ts = -1;
 
     // Utility methods to convert airsim_client_
     msr::airlib::MultirotorRpcLibClient* get_multirotor_client();
@@ -353,6 +360,8 @@ private:
     std::unordered_map<std::string, std::unique_ptr<VehicleROS>> vehicle_name_ptr_map_;
     std::unique_ptr<VehicleROS> vehicle_ros_;
     static const std::unordered_map<int, std::string> image_type_int_to_string_map_;
+    std::map<std::string, std::string> vehicle_imu_map_;
+    std::map<std::string, std::string> vehicle_lidar_map_;
 
     bool is_vulkan_; // rosparam obtained from launch file. If vulkan is being used, we BGR encoding instead of RGB
 
@@ -366,7 +375,7 @@ private:
     ros::CallbackQueue img_timer_cb_queue_;
     ros::CallbackQueue lidar_timer_cb_queue_;
 
-    std::mutex drone_control_mutex_;
+    std::recursive_mutex drone_control_mutex_;
 
     // gimbal control
     bool has_gimbal_cmd_;
@@ -395,6 +404,7 @@ private:
     /// ROS Timers.
     ros::Timer airsim_img_response_timer_;
     ros::Timer airsim_control_update_timer_;
+    ros::Timer airsim_imu_update_timer_;
     ros::Timer airsim_lidar_update_timer_;
 
     typedef std::pair<std::vector<ImageRequest>, std::string> airsim_img_request_vehicle_name_pair;
@@ -403,6 +413,8 @@ private:
     std::vector<image_transport::Publisher> image_pub_vec_;
     std::vector<ros::Publisher> cam_info_pub_vec_;
     std::vector<sensor_msgs::CameraInfo> camera_info_msg_vec_;
+    std::vector<ros::Publisher> lidar_pub_vec_;
+    std::vector<ros::Publisher> imu_pub_vec_;
 
     /// ROS other publishers
     ros::Publisher clock_pub_;
