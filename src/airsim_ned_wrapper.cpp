@@ -275,7 +275,7 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
             if (sensor_setting->enabled) {
                 // SensorPublisher sensor_publisher;
                 // auto& sensor_name = sensor_name;
-                auto& sensor_type = sensor_setting->sensor_type;
+                // auto& sensor_type = sensor_setting->sensor_type;
                 switch (sensor_setting->sensor_type) {
                 // case SensorBase::SensorType::Barometer: {
                 //     ROS_INFO_STREAM(sensor_name << ": Barometer");
@@ -285,8 +285,9 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
                 case SensorBase::SensorType::Imu: {
                     vehicle_imu_map_[curr_vehicle_name] = sensor_name; 
                     ROS_INFO_STREAM(sensor_name << ": IMU");
-                    ros::Publisher imupub = nh_private_.advertise<sensor_msgs::Imu> (curr_vehicle_name + "/imu/" + sensor_name, 10);
-                    imu_pub_vec_.push_back(imupub);
+                    // ros::Publisher imupub = nh_private_.advertise<sensor_msgs::Imu> (curr_vehicle_name + "/imu/" + sensor_name, 10);
+                    // imu_pub_vec_.push_back(imupub);
+                    imu_pub_vec_.push_back(nh_private_.advertise<sensor_msgs::Imu> (curr_vehicle_name + "/imu/" + sensor_name, 10));
                     // sensor_publisher.publisher = nh_private_.advertise<sensor_msgs::Imu> (curr_vehicle_name + "/ignorethisimu/" + sensor_name, 10);
                     break;
                 }
@@ -370,8 +371,8 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
         //                                 &img_timer_cb_queue_);
 
         // airsim_img_response_timer_ = nh_private_.createTimer(timer_options);
-        airsim_img_response_timer_ = nh_.createTimer(ros::Duration(update_airsim_img_response_every_n_sec), &AirsimNEDWrapper::img_response_timer_cb, this);
-        is_used_img_timer_cb_queue_ = true;
+        // airsim_img_response_timer_ = nh_.createTimer(ros::Duration(update_airsim_img_response_every_n_sec), &AirsimNEDWrapper::img_response_timer_cb, this);
+        // is_used_img_timer_cb_queue_ = true;
     }
 
     // lidars update on their own callback/thread at a given rate
@@ -387,7 +388,7 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
 
         // airsim_lidar_update_timer_ = nh_private_.createTimer(timer_options);
         airsim_lidar_update_timer_ = nh_.createTimer(ros::Duration(update_lidar_every_n_sec), &AirsimNEDWrapper::lidar_timer_cb, this);
-        is_used_lidar_timer_cb_queue_ = true;
+        // is_used_lidar_timer_cb_queue_ = true;
     }
 
     initialize_airsim();
@@ -1258,49 +1259,49 @@ void AirsimNEDWrapper::publish_vehicle_state()
         // ground truth GPS position from sim/HITL
         vehicle_ros->global_gps_pub.publish(vehicle_ros->gps_sensor_msg);
 
-        for (auto& sensor_publisher : vehicle_ros->sensor_pubs) {
-            switch (sensor_publisher.sensor_type) {
-            // case SensorBase::SensorType::Barometer: {
-            //     auto baro_data = airsim_client_->getBarometerData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
-            //     airsim_ros_pkgs::Altimeter alt_msg = get_altimeter_msg_from_airsim(baro_data);
-            //     alt_msg.header.frame_id = vehicle_ros->vehicle_name;
-            //     sensor_publisher.publisher.publish(alt_msg);
-            //     break;
-            // }
-            // case SensorBase::SensorType::Imu: {
-            //     auto imu_data = airsim_client_->getImuData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
-            //     sensor_msgs::Imu imu_msg = get_imu_msg_from_airsim(imu_data);
-            //     imu_msg.header.frame_id = vehicle_frame_id_;
-            //     sensor_publisher.publisher.publish(imu_msg);
-            //     break;
-            // }
-            case SensorBase::SensorType::Distance: {
-                auto distance_data = airsim_client_->getDistanceSensorData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
-                sensor_msgs::Range dist_msg = get_range_from_airsim(distance_data);
-                dist_msg.header.frame_id = vehicle_frame_id_;
-                sensor_publisher.publisher.publish(dist_msg);
-                break;
-            }
-            case SensorBase::SensorType::Gps: {
-                auto gps_data = airsim_client_->getGpsData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
-                sensor_msgs::NavSatFix gps_msg = get_gps_msg_from_airsim(gps_data);
-                gps_msg.header.frame_id = vehicle_frame_id_;
-                sensor_publisher.publisher.publish(gps_msg);
-                break;
-            }
-            case SensorBase::SensorType::Lidar: {
-                // handled via callback
-                break;
-            }
-            case SensorBase::SensorType::Magnetometer: {
-                auto mag_data = airsim_client_->getMagnetometerData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
-                sensor_msgs::MagneticField mag_msg = get_mag_msg_from_airsim(mag_data);
-                mag_msg.header.frame_id = vehicle_frame_id_;
-                sensor_publisher.publisher.publish(mag_msg);
-                break;
-            }
-            }
-        }
+        // for (auto& sensor_publisher : vehicle_ros->sensor_pubs) {
+        //     switch (sensor_publisher.sensor_type) {
+        //     // case SensorBase::SensorType::Barometer: {
+        //     //     auto baro_data = airsim_client_->getBarometerData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
+        //     //     airsim_ros_pkgs::Altimeter alt_msg = get_altimeter_msg_from_airsim(baro_data);
+        //     //     alt_msg.header.frame_id = vehicle_ros->vehicle_name;
+        //     //     sensor_publisher.publisher.publish(alt_msg);
+        //     //     break;
+        //     // }
+        //     // case SensorBase::SensorType::Imu: {
+        //     //     auto imu_data = airsim_client_->getImuData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
+        //     //     sensor_msgs::Imu imu_msg = get_imu_msg_from_airsim(imu_data);
+        //     //     imu_msg.header.frame_id = vehicle_frame_id_;
+        //     //     sensor_publisher.publisher.publish(imu_msg);
+        //     //     break;
+        //     // }
+        //     case SensorBase::SensorType::Distance: {
+        //         auto distance_data = airsim_client_->getDistanceSensorData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
+        //         sensor_msgs::Range dist_msg = get_range_from_airsim(distance_data);
+        //         dist_msg.header.frame_id = vehicle_frame_id_;
+        //         sensor_publisher.publisher.publish(dist_msg);
+        //         break;
+        //     }
+        //     case SensorBase::SensorType::Gps: {
+        //         auto gps_data = airsim_client_->getGpsData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
+        //         sensor_msgs::NavSatFix gps_msg = get_gps_msg_from_airsim(gps_data);
+        //         gps_msg.header.frame_id = vehicle_frame_id_;
+        //         sensor_publisher.publisher.publish(gps_msg);
+        //         break;
+        //     }
+        //     case SensorBase::SensorType::Lidar: {
+        //         // handled via callback
+        //         break;
+        //     }
+        //     case SensorBase::SensorType::Magnetometer: {
+        //         auto mag_data = airsim_client_->getMagnetometerData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
+        //         sensor_msgs::MagneticField mag_msg = get_mag_msg_from_airsim(mag_data);
+        //         mag_msg.header.frame_id = vehicle_frame_id_;
+        //         sensor_publisher.publisher.publish(mag_msg);
+        //         break;
+        //     }
+        //     }
+        // }
 
         update_and_publish_static_transforms(vehicle_ros.get());
     }
