@@ -6,7 +6,9 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /Lidar Returns1/Status1
+        - /OctoMap1
+        - /TF1
+        - /TF1/Frames1
       Splitter Ratio: 0.5
     Tree Height: 739
   - Class: rviz/Selection
@@ -26,7 +28,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: Image
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -61,7 +63,7 @@ Visualization Manager:
       Octomap Topic: /octomap_full
       Queue Size: 5
       Value: true
-      Voxel Alpha: 1
+      Voxel Alpha: 0.10000000149011612
       Voxel Coloring: Z-Axis
       Voxel Rendering: Occupied Voxels
     - Alpha: 0.699999988079071
@@ -108,23 +110,37 @@ Visualization Manager:
       Filter (whitelist): ""
       Frame Timeout: 15
       Frames:
-        All Enabled: true
+        All Enabled: false
         base_link:
           Value: true
         base_link_frd:
-          Value: true
+          Value: false
+        base_link_frd/Lidar2:
+          Value: false
+        front_center_custom_body:
+          Value: false
+        front_center_custom_optical:
+          Value: false
+        front_left_custom_body:
+          Value: false
+        front_left_custom_optical:
+          Value: false
+        front_right_custom_body:
+          Value: false
+        front_right_custom_optical:
+          Value: false
         map:
           Value: true
         map_ned:
-          Value: true
+          Value: false
         odom:
-          Value: true
+          Value: false
         odom_ned:
-          Value: true
+          Value: false
         world:
-          Value: true
+          Value: false
         world_ned:
-          Value: true
+          Value: false
       Marker Alpha: 1
       Marker Scale: 1
       Name: TF
@@ -140,7 +156,20 @@ Visualization Manager:
             map:
               base_link:
                 base_link_frd:
-                  {}
+                  base_link_frd/Lidar2:
+                    {}
+                  front_center_custom_body:
+                    {}
+                  front_center_custom_optical:
+                    {}
+                  front_left_custom_body:
+                    {}
+                  front_left_custom_optical:
+                    {}
+                  front_right_custom_body:
+                    {}
+                  front_right_custom_optical:
+                    {}
               map_ned:
                 {}
       Update Interval: 0
@@ -225,7 +254,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 135.0669708251953
+      Distance: 1.2933698892593384
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -233,17 +262,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 5.668696403503418
-        Y: 19.703798294067383
-        Z: -0.051031652837991714
+        X: 0
+        Y: 0
+        Z: 0
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.015398383140564
+      Pitch: 0.6697971224784851
       Target Frame: <Fixed Frame>
-      Yaw: 0.5204209089279175
+      Yaw: 1.1753991842269897
     Saved: ~
 Window Geometry:
   Displays:

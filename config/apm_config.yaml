@@ -72,7 +72,7 @@ local_position:
   tf:
     send: true
     frame_id: "map"
-    child_frame_id: "odom"
+    child_frame_id: "base_link"
     send_fcu: false
 
 # param
