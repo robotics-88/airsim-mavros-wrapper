@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Lidar Returns1/Status1
       Splitter Ratio: 0.5
     Tree Height: 739
   - Class: rviz/Selection
@@ -25,7 +26,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: Image
+    SyncSource: ""
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -96,7 +97,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.009999999776482582
       Style: Flat Squares
-      Topic: /velodyne_points
+      Topic: /airsim_ros_node/base_link/lidar/Lidar2
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -111,22 +112,6 @@ Visualization Manager:
         base_link:
           Value: true
         base_link_frd:
-          Value: true
-        base_link_frd/Lidar1:
-          Value: true
-        base_link_frd/Lidar2:
-          Value: true
-        front_center_custom_body:
-          Value: true
-        front_center_custom_optical:
-          Value: true
-        front_left_custom_body:
-          Value: true
-        front_left_custom_optical:
-          Value: true
-        front_right_custom_body:
-          Value: true
-        front_right_custom_optical:
           Value: true
         map:
           Value: true
@@ -147,33 +132,17 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          base_link:
-            base_link_frd:
-              base_link_frd/Lidar1:
-                {}
-              base_link_frd/Lidar2:
-                {}
-              front_center_custom_body:
-                {}
-              front_center_custom_optical:
-                {}
-              front_left_custom_body:
-                {}
-              front_left_custom_optical:
-                {}
-              front_right_custom_body:
-                {}
-              front_right_custom_optical:
-                {}
-          map_ned:
-            {}
         odom:
           odom_ned:
             {}
         world_ned:
           world:
-            {}
+            map:
+              base_link:
+                base_link_frd:
+                  {}
+              map_ned:
+                {}
       Update Interval: 0
       Value: true
     - Class: rviz/Image
@@ -217,7 +186,7 @@ Visualization Manager:
       Marker Topic: /explore/frontiers
       Name: Frontiers
       Namespaces:
-        frontiers: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -225,7 +194,7 @@ Visualization Manager:
       Marker Topic: /explore/frontier_goal_marker
       Name: FrontierGoal
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
