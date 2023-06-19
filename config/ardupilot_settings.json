@@ -26,20 +26,6 @@
           "SensorType": 3,
           "Enabled": true
         },
-        "Lidar1": {
-          "SensorType": 6,
-          "Enabled": true,
-          "NumberOfChannels": 1,
-          "PointsPerSecond": 5000,
-          "DrawDebugPoints": false,
-          "RotationsPerSecond": 10,
-          "VerticalFOVUpper": 0,
-          "VerticalFOVLower": 0,
-          "HorizontalFOVStart": 0,
-          "HorizontalFOVEnd": 359,
-          "DataFrame": "SensorLocalFrame",
-          "ExternalController": true
-        },
         "Lidar2": {
           "SensorType": 6,
           "Enabled": true,
