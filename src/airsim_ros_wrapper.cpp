@@ -53,7 +53,7 @@ AirsimROSWrapper::AirsimROSWrapper(const ros::NodeHandle& nh) :
     is_used_img_timer_cb_queue_ = false;
 
     world_frame_id_ = "world"; // todo rosparam?
-
+    parseAirsimSettings();
     initialize_ros();
 
     std::cout << "AirsimROSWrapper Initialized!\n";
@@ -117,7 +117,7 @@ void AirsimROSWrapper::initialize_ros()
 
     // ros params
     double update_airsim_control_every_n_sec;
-    double imu_n_sec;
+    double imu_n_sec = .01;
     nh_private_.getParam("is_vulkan", is_vulkan_);
     nh_private_.getParam("update_airsim_control_every_n_sec", update_airsim_control_every_n_sec);
     nh_private_.getParam("update_imu_n_sec", imu_n_sec);
