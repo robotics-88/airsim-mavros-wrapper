@@ -6,7 +6,6 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /OctoMap1
         - /TF1
         - /TF1/Frames1
       Splitter Ratio: 0.5
@@ -72,7 +71,7 @@ Visualization Manager:
       Draw Behind: false
       Enabled: true
       Name: Projection
-      Topic: /projected_map
+      Topic: /octomap_slice
       Unreliable: false
       Use Timestamp: false
       Value: true
@@ -117,6 +116,8 @@ Visualization Manager:
           Value: false
         base_link_frd/Lidar2:
           Value: false
+        base_link_frd/odom:
+          Value: true
         front_center_custom_body:
           Value: false
         front_center_custom_optical:
@@ -149,6 +150,8 @@ Visualization Manager:
       Show Names: true
       Tree:
         odom:
+          base_link_frd/odom:
+            {}
           odom_ned:
             {}
         world_ned:
@@ -254,7 +257,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.2933698892593384
+      Distance: 169.08212280273438
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -270,9 +273,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6697971224784851
+      Pitch: 0.5797973871231079
       Target Frame: <Fixed Frame>
-      Yaw: 1.1753991842269897
+      Yaw: 3.9354023933410645
     Saved: ~
 Window Geometry:
   Displays:
