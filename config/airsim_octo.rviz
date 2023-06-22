@@ -98,7 +98,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.009999999776482582
       Style: Flat Squares
-      Topic: /airsim_ros_node/base_link/lidar/Lidar2
+      Topic: /airsim_ros_node/base_link_frd/lidar/Lidar2
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
