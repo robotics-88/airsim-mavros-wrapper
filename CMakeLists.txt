@@ -22,6 +22,8 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   mavros_msgs
   nav_msgs
+  octomap_rviz_plugins
+  rosbridge_server
   roscpp
   roslib
   std_msgs
