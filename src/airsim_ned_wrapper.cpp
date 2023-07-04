@@ -372,7 +372,7 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
         //                                 &img_timer_cb_queue_);
 
         // airsim_img_response_timer_ = nh_private_.createTimer(timer_options);
-        airsim_img_response_timer_ = nh_.createTimer(ros::Duration(update_airsim_img_response_every_n_sec), &AirsimNEDWrapper::img_response_timer_cb, this);
+        // airsim_img_response_timer_ = nh_.createTimer(ros::Duration(update_airsim_img_response_every_n_sec), &AirsimNEDWrapper::img_response_timer_cb, this);
         // is_used_img_timer_cb_queue_ = true;
     }
 
@@ -1545,11 +1545,11 @@ void AirsimNEDWrapper::append_static_lidar_tf(VehicleROS* vehicle_ros, const std
     lidar_tf_msg.header.frame_id = vehicle_frame_id_;
     lidar_tf_msg.child_frame_id = vehicle_frame_id_ + "/" + lidar_name;
     lidar_tf_msg.transform.translation.x = lidar_setting.relative_pose.position.x();
-    lidar_tf_msg.transform.translation.y = lidar_setting.relative_pose.position.y();
-    lidar_tf_msg.transform.translation.z = lidar_setting.relative_pose.position.z();
+    lidar_tf_msg.transform.translation.y = - lidar_setting.relative_pose.position.y();
+    lidar_tf_msg.transform.translation.z = - lidar_setting.relative_pose.position.z();
     lidar_tf_msg.transform.rotation.x = lidar_setting.relative_pose.orientation.x();
-    lidar_tf_msg.transform.rotation.y = lidar_setting.relative_pose.orientation.y();
-    lidar_tf_msg.transform.rotation.z = lidar_setting.relative_pose.orientation.z();
+    lidar_tf_msg.transform.rotation.y = - lidar_setting.relative_pose.orientation.y();
+    lidar_tf_msg.transform.rotation.z = - lidar_setting.relative_pose.orientation.z();
     lidar_tf_msg.transform.rotation.w = lidar_setting.relative_pose.orientation.w();
 
     if (isENU_) {
@@ -1584,18 +1584,28 @@ void AirsimNEDWrapper::append_static_camera_tf(VehicleROS* vehicle_ros, const st
         static_cam_tf_body_msg.transform.rotation.z = -static_cam_tf_body_msg.transform.rotation.z;
     }
 
-    geometry_msgs::TransformStamped static_cam_tf_optical_msg = static_cam_tf_body_msg;
+    geometry_msgs::TransformStamped static_cam_tf_optical_msg;
+    static_cam_tf_optical_msg.header.frame_id = camera_name + "_body";
     static_cam_tf_optical_msg.child_frame_id = camera_name + "_optical";
+    static_cam_tf_optical_msg.transform.translation.x = 0;
+    static_cam_tf_optical_msg.transform.translation.y = 0;
+    static_cam_tf_optical_msg.transform.translation.z = 0;
+    tf2::Quaternion quat2;
+    quat2.setRPY(-M_PI_2, 0, -M_PI_2);
+    static_cam_tf_optical_msg.transform.rotation.x = quat2.x();
+    static_cam_tf_optical_msg.transform.rotation.y = quat2.y();
+    static_cam_tf_optical_msg.transform.rotation.z = quat2.z();
+    static_cam_tf_optical_msg.transform.rotation.w = quat2.w();
 
-    tf2::Quaternion quat_cam_body;
-    tf2::Quaternion quat_cam_optical;
-    tf2::convert(static_cam_tf_body_msg.transform.rotation, quat_cam_body);
-    tf2::Matrix3x3 mat_cam_body(quat_cam_body);
-    tf2::Matrix3x3 mat_cam_optical;
-    mat_cam_optical.setValue(mat_cam_body.getColumn(1).getX(), mat_cam_body.getColumn(2).getX(), mat_cam_body.getColumn(0).getX(), mat_cam_body.getColumn(1).getY(), mat_cam_body.getColumn(2).getY(), mat_cam_body.getColumn(0).getY(), mat_cam_body.getColumn(1).getZ(), mat_cam_body.getColumn(2).getZ(), mat_cam_body.getColumn(0).getZ());
-    mat_cam_optical.getRotation(quat_cam_optical);
-    quat_cam_optical.normalize();
-    tf2::convert(quat_cam_optical, static_cam_tf_optical_msg.transform.rotation);
+    // tf2::Quaternion quat_cam_body;
+    // tf2::Quaternion quat_cam_optical;
+    // tf2::convert(static_cam_tf_body_msg.transform.rotation, quat_cam_body);
+    // tf2::Matrix3x3 mat_cam_body(quat_cam_body);
+    // tf2::Matrix3x3 mat_cam_optical;
+    // mat_cam_optical.setValue(mat_cam_body.getColumn(1).getX(), mat_cam_body.getColumn(2).getX(), mat_cam_body.getColumn(0).getX(), mat_cam_body.getColumn(1).getY(), mat_cam_body.getColumn(2).getY(), mat_cam_body.getColumn(0).getY(), mat_cam_body.getColumn(1).getZ(), mat_cam_body.getColumn(2).getZ(), mat_cam_body.getColumn(0).getZ());
+    // mat_cam_optical.getRotation(quat_cam_optical);
+    // quat_cam_optical.normalize();
+    // tf2::convert(quat_cam_optical, static_cam_tf_optical_msg.transform.rotation);
 
     vehicle_ros->static_tf_msg_vec.emplace_back(static_cam_tf_body_msg);
     vehicle_ros->static_tf_msg_vec.emplace_back(static_cam_tf_optical_msg);

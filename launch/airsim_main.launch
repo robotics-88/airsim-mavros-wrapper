@@ -5,7 +5,7 @@
 
     <!-- Frames -->
     <arg name="vehicle_name" default="/airsim_ros_node/base_link_frd"/>
-    <arg name="vehicle_frame" default="base_link_frd"/>
+    <arg name="vehicle_frame" default="base_link"/>
     <arg name="odom_frame" default="odom"/>
     <arg name="map_frame" default="map"/>
     <arg name="world_frame" default="world"/>
@@ -22,9 +22,9 @@
 
     <!-- AirSim publish rates -->
     <arg name="image_pub_freq" default=".05"/>
-    <arg name="lidar_pub_freq" default=".1"/>
+    <arg name="lidar_pub_freq" default=".3"/>
     <arg name="control_pub_freq" default=".1"/>
-    <arg name="update_imu_n_sec" default=".01"/>
+    <arg name="update_imu_n_sec" default=".1"/>
 
     <!-- Common control args -->
     <arg name="min_alt" default="0.2"/>
@@ -57,20 +57,20 @@
         <param name="depth_info" value="$(arg depth_info)"/>
     </node>
 
-    <!-- <include file="$(find airsim_launch)/launch/airsim_oa.launch">
+    <include file="$(find airsim_launch)/launch/airsim_oa.launch">
         <arg name="min_alt" value="$(arg min_alt)"/>
         <arg name="max_alt" value="$(arg max_alt)"/>
         <arg name="imu_topic" value="$(arg imu_topic)"/>
         <arg name="raw_cloud_topic" value="$(arg raw_lidar_topic)"/>
         <arg name="reg_cloud_topic" value="$(arg registered_lidar_topic)"/>
-    </include> -->
+    </include>
 
     <node pkg="path_to_mavros" type="path_to_mavros_node" respawn="false" name="path_to_mavros" output="screen">
         <param name="default_speed" value="$(arg default_speed)"/>
     </node>
 
     <include file="$(find octomap_slice)/launch/octomap_full_handling.launch">
-        <arg name="cloud_topic" value="$(arg raw_lidar_topic)"/>
+        <arg name="cloud_topic" value="$(arg registered_lidar_topic)"/>
         <arg name="octomap_res" value="$(arg map_resolution)"/>
         <arg name="slice_height" value="$(arg default_alt)"/>
         <arg name="rviz" value="false"/>
