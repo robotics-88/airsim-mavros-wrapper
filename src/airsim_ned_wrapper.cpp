@@ -814,6 +814,7 @@ geometry_msgs::QuaternionStamped AirsimNEDWrapper::get_attitude_from_airsim_stat
 // read this carefully https://docs.ros.org/kinetic/api/sensor_msgs/html/msg/PointCloud2.html
 sensor_msgs::PointCloud2 AirsimNEDWrapper::get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data) const
 {
+    // TODO need to rotate PCL 180 degrees about x-axis, since reconfiguring for base_link/FLU
     sensor_msgs::PointCloud2 lidar_msg;
     lidar_msg.header.frame_id = world_frame_id_; // todo
 
@@ -1085,7 +1086,7 @@ ros::Time AirsimNEDWrapper::make_ts(uint64_t unreal_ts) {
 sensor_msgs::Imu AirsimNEDWrapper::get_imu_msg_from_airsim(const msr::airlib::ImuBase::Output& imu_data)
 {
     sensor_msgs::Imu imu_msg;
-    // imu_msg.header.frame_id = "/airsim/odom_local_ned";// todo multiple drones
+    imu_msg.header.frame_id = vehicle_frame_id_;// todo multiple drones
     imu_msg.orientation.x = imu_data.orientation.x();
     imu_msg.orientation.y = imu_data.orientation.y();
     imu_msg.orientation.z = imu_data.orientation.z();
@@ -1104,7 +1105,7 @@ sensor_msgs::Imu AirsimNEDWrapper::get_imu_msg_from_airsim(const msr::airlib::Im
     // imu_msg.orientation_covariance = ;
     // imu_msg.angular_velocity_covariance = ;
     // imu_msg.linear_acceleration_covariance = ;
-    imu_msg.header.stamp = make_ts(imu_data.time_stamp);
+    imu_msg.header.stamp = airsim_timestamp_to_ros(imu_data.time_stamp);
     return imu_msg;
 }
 
@@ -1118,10 +1119,12 @@ void AirsimNEDWrapper::drone_imu_timer_cb(const ros::TimerEvent& event)
             for (const auto& vehicle_imu_pair: vehicle_imu_map_)
             {
                 std::unique_lock<std::recursive_mutex> lck(drone_control_mutex_);
+                ros::Time curr_ros_time = ros::Time::now();
                 auto imu_data = get_multirotor_client()->getImuData(vehicle_imu_pair.second, vehicle_imu_pair.first);
                 lck.unlock();
                 sensor_msgs::Imu imu_msg = get_imu_msg_from_airsim(imu_data);
-                imu_msg.header.frame_id = vehicle_imu_pair.first;
+                imu_msg.header.stamp = curr_ros_time;
+                // imu_msg.header.frame_id = vehicle_imu_pair.first;
                 imu_pub_vec_[ctr].publish(imu_msg);
                 ctr++;
             } 
@@ -1658,8 +1661,8 @@ void AirsimNEDWrapper::lidar_timer_cb(const ros::TimerEvent& event)
                 auto lidar_data = airsim_client_lidar_.getLidarData(vehicle_lidar_pair.second, vehicle_lidar_pair.first); // airsim api is imu_name, vehicle_name
                 lck.unlock();
                 sensor_msgs::PointCloud2 lidar_msg = get_lidar_msg_from_airsim(lidar_data); // todo make const ptr msg to avoid copy
-                lidar_msg.header.frame_id = vehicle_lidar_pair.first + "/" + vehicle_lidar_pair.second; // sensor frame name. todo add to doc
-                lidar_msg.header.stamp = ros::Time::now();
+                lidar_msg.header.frame_id = vehicle_frame_id_+ "/" + vehicle_lidar_pair.second; // sensor frame name. todo add to doc
+                lidar_msg.header.stamp = airsim_timestamp_to_ros(lidar_data.time_stamp);// ros::Time::now();
                 lidar_pub_vec_[ctr].publish(lidar_msg);
                 ctr++;
             } 
