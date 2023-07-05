@@ -296,7 +296,7 @@ private:
     tf2::Quaternion get_tf2_quat(const msr::airlib::Quaternionr& airlib_quat) const;
     msr::airlib::Quaternionr get_airlib_quat(const geometry_msgs::Quaternion& geometry_msgs_quat) const;
     msr::airlib::Quaternionr get_airlib_quat(const tf2::Quaternion& tf2_quat) const;
-    nav_msgs::Odometry get_odom_msg_from_multirotor_state(const msr::airlib::MultirotorState& drone_state) const;
+    nav_msgs::Odometry get_odom_msg_from_multirotor_state(const msr::airlib::MultirotorState& drone_state);
     nav_msgs::Odometry get_odom_msg_from_car_state(const msr::airlib::CarApiBase::CarState& car_state) const;
     geometry_msgs::QuaternionStamped get_attitude_from_airsim_state(const msr::airlib::MultirotorState& drone_state);
     // airsim_ros_pkgs::CarState get_roscarstate_msg_from_car_state(const msr::airlib::CarApiBase::CarState& car_state) const;
@@ -305,11 +305,11 @@ private:
     sensor_msgs::NavSatFix get_gps_sensor_msg_from_airsim_geo_point(const msr::airlib::GeoPoint& geo_point) const;
     // sensor_msgs::Imu get_imu_msg_from_airsim(const msr::airlib::ImuBase::Output& imu_data) const;
     // airsim_ros_pkgs::Altimeter get_altimeter_msg_from_airsim(const msr::airlib::BarometerBase::Output& alt_data) const;
-    sensor_msgs::Range get_range_from_airsim(const msr::airlib::DistanceSensorData& dist_data) const;
+    sensor_msgs::Range get_range_from_airsim(const msr::airlib::DistanceSensorData& dist_data);
     sensor_msgs::PointCloud2 get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data) const;
     sensor_msgs::PointCloud2 get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data, const std::string& vehicle_name, const std::string& sensor_name) const;
-    sensor_msgs::NavSatFix get_gps_msg_from_airsim(const msr::airlib::GpsBase::Output& gps_data) const;
-    sensor_msgs::MagneticField get_mag_msg_from_airsim(const msr::airlib::MagnetometerBase::Output& mag_data) const;
+    sensor_msgs::NavSatFix get_gps_msg_from_airsim(const msr::airlib::GpsBase::Output& gps_data);
+    sensor_msgs::MagneticField get_mag_msg_from_airsim(const msr::airlib::MagnetometerBase::Output& mag_data);
     // airsim_ros_pkgs::Environment get_environment_msg_from_airsim(const msr::airlib::Environment::State& env_data) const;
     sensor_msgs::Imu get_imu_msg_from_airsim(const msr::airlib::ImuBase::Output& imu_data);
 

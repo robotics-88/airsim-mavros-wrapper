@@ -184,7 +184,7 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
         vehicle_ros_->odom_frame_id = curr_vehicle_name + "/" + odom_frame_id_;
         vehicle_ros_->vehicle_name = curr_vehicle_name;
 
-        append_static_vehicle_tf(vehicle_ros_.get(), *vehicle_setting);
+        // append_static_vehicle_tf(vehicle_ros_.get(), *vehicle_setting);
 
         vehicle_ros_->odom_local_pub = nh_private_.advertise<nav_msgs::Odometry>(curr_vehicle_name + "/" + odom_frame_id_, 10);
         vehicle_ros_->attitude_pub = nh_private_.advertise<geometry_msgs::QuaternionStamped>(curr_vehicle_name + "/attitude", 10);
@@ -360,7 +360,7 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
     // reset_srvr_ = nh_private_.advertiseService("reset", &AirsimNEDWrapper::reset_srv_cb, this);
 
     if (publish_clock_) {
-        clock_pub_ = nh_private_.advertise<rosgraph_msgs::Clock>("clock", 1);
+        clock_pub_ = nh_.advertise<rosgraph_msgs::Clock>("/clock", 1);
     }
 
     // if >0 cameras, add one more thread for img_request_timer_cb
@@ -738,7 +738,7 @@ nav_msgs::Odometry AirsimNEDWrapper::get_odom_msg_from_car_state(const msr::airl
     return odom_msg;
 }
 
-nav_msgs::Odometry AirsimNEDWrapper::get_odom_msg_from_multirotor_state(const msr::airlib::MultirotorState& drone_state) const
+nav_msgs::Odometry AirsimNEDWrapper::get_odom_msg_from_multirotor_state(const msr::airlib::MultirotorState& drone_state)
 {
     // nav_msgs::Odometry odom_msg;
 
@@ -779,12 +779,21 @@ nav_msgs::Odometry AirsimNEDWrapper::get_odom_msg_from_multirotor_state(const ms
     odom_flu_msg.pose.pose.position.z = -drone_state.getPosition().z();
 
     //Modified Quaternion Here
-    Eigen::Quaterniond quat(drone_state.getOrientation().w(), drone_state.getOrientation().x(), drone_state.getOrientation().y(), drone_state.getOrientation().z());
-    // quat = Eigen::Quaterniond(sqrt(2.0)/2.0, sqrt(2.0)/2.0) * quat;
-    // quat.
+    // Eigen::Quaterniond quat(drone_state.getOrientation().w(), drone_state.getOrientation().x(), drone_state.getOrientation().y(), drone_state.getOrientation().z());
+    // // quat = Eigen::Quaterniond(sqrt(2.0)/2.0, sqrt(2.0)/2.0) * quat;
+    // // quat.
+
+    tf2::Quaternion quat(drone_state.getOrientation().w(), drone_state.getOrientation().x(), drone_state.getOrientation().y(), drone_state.getOrientation().z());
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+    pitch = pitch + M_PI;
+    yaw = yaw + M_PI;
+    quat.setRPY(roll, pitch, yaw);
+    quat.normalize();
+
     odom_flu_msg.pose.pose.orientation.x = quat.x();
-    odom_flu_msg.pose.pose.orientation.y = - quat.y();
-    odom_flu_msg.pose.pose.orientation.z = - quat.z();
+    odom_flu_msg.pose.pose.orientation.y = quat.y();
+    odom_flu_msg.pose.pose.orientation.z = quat.z();
     odom_flu_msg.pose.pose.orientation.w = quat.w();
 
     odom_flu_msg.twist.twist.linear.x = drone_state.kinematics_estimated.twist.linear.x();
@@ -801,7 +810,7 @@ geometry_msgs::QuaternionStamped AirsimNEDWrapper::get_attitude_from_airsim_stat
     geometry_msgs::QuaternionStamped attitude;
     // odom_ned_msg.header.frame_id = world_frame_id_;
     // odom_ned_msg.child_frame_id = "/airsim/odom_local_ned"; // todo make param
-    attitude.header.stamp = make_ts(drone_state.timestamp);
+    // attitude.header.stamp = make_ts(drone_state.timestamp);
     attitude.quaternion.x = drone_state.getOrientation().x();
     attitude.quaternion.y = drone_state.getOrientation().y();
     attitude.quaternion.z = drone_state.getOrientation().z();
@@ -861,7 +870,7 @@ sensor_msgs::PointCloud2 AirsimNEDWrapper::get_lidar_msg_from_airsim(const msr::
 sensor_msgs::PointCloud2 AirsimNEDWrapper::get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data, const std::string& vehicle_name, const std::string& sensor_name) const
 {
     sensor_msgs::PointCloud2 lidar_msg;
-    lidar_msg.header.stamp = ros::Time::now();
+    // lidar_msg.header.stamp = ros::Time::now();
     // lidar_msg.header.frame_id = vehicle_name + "/" + sensor_name;
 
     if (lidar_data.point_cloud.size() > 3) {
@@ -935,46 +944,46 @@ sensor_msgs::PointCloud2 AirsimNEDWrapper::get_lidar_msg_from_airsim(const msr::
 //     return env_msg;
 // }
 
-sensor_msgs::MagneticField AirsimNEDWrapper::get_mag_msg_from_airsim(const msr::airlib::MagnetometerBase::Output& mag_data) const
-{
-    sensor_msgs::MagneticField mag_msg;
-    mag_msg.magnetic_field.x = mag_data.magnetic_field_body.x();
-    mag_msg.magnetic_field.y = mag_data.magnetic_field_body.y();
-    mag_msg.magnetic_field.z = mag_data.magnetic_field_body.z();
-    std::copy(std::begin(mag_data.magnetic_field_covariance),
-              std::end(mag_data.magnetic_field_covariance),
-              std::begin(mag_msg.magnetic_field_covariance));
-    mag_msg.header.stamp = airsim_timestamp_to_ros(mag_data.time_stamp);
+// sensor_msgs::MagneticField AirsimNEDWrapper::get_mag_msg_from_airsim(const msr::airlib::MagnetometerBase::Output& mag_data)
+// {
+//     sensor_msgs::MagneticField mag_msg;
+//     mag_msg.magnetic_field.x = mag_data.magnetic_field_body.x();
+//     mag_msg.magnetic_field.y = mag_data.magnetic_field_body.y();
+//     mag_msg.magnetic_field.z = mag_data.magnetic_field_body.z();
+//     std::copy(std::begin(mag_data.magnetic_field_covariance),
+//               std::end(mag_data.magnetic_field_covariance),
+//               std::begin(mag_msg.magnetic_field_covariance));
+//     mag_msg.header.stamp = make_ts(mag_data.time_stamp);
 
-    return mag_msg;
-}
+//     return mag_msg;
+// }
 
 // todo covariances
-sensor_msgs::NavSatFix AirsimNEDWrapper::get_gps_msg_from_airsim(const msr::airlib::GpsBase::Output& gps_data) const
-{
-    sensor_msgs::NavSatFix gps_msg;
-    gps_msg.header.stamp = airsim_timestamp_to_ros(gps_data.time_stamp);
-    gps_msg.latitude = gps_data.gnss.geo_point.latitude;
-    gps_msg.longitude = gps_data.gnss.geo_point.longitude;
-    gps_msg.altitude = gps_data.gnss.geo_point.altitude;
-    gps_msg.status.service = sensor_msgs::NavSatStatus::SERVICE_GLONASS;
-    gps_msg.status.status = gps_data.gnss.fix_type;
-    // gps_msg.position_covariance_type =
-    // gps_msg.position_covariance =
+// sensor_msgs::NavSatFix AirsimNEDWrapper::get_gps_msg_from_airsim(const msr::airlib::GpsBase::Output& gps_data)
+// {
+//     sensor_msgs::NavSatFix gps_msg;
+//     gps_msg.header.stamp = make_ts(gps_data.time_stamp);
+//     gps_msg.latitude = gps_data.gnss.geo_point.latitude;
+//     gps_msg.longitude = gps_data.gnss.geo_point.longitude;
+//     gps_msg.altitude = gps_data.gnss.geo_point.altitude;
+//     gps_msg.status.service = sensor_msgs::NavSatStatus::SERVICE_GLONASS;
+//     gps_msg.status.status = gps_data.gnss.fix_type;
+//     // gps_msg.position_covariance_type =
+//     // gps_msg.position_covariance =
 
-    return gps_msg;
-}
+//     return gps_msg;
+// }
 
-sensor_msgs::Range AirsimNEDWrapper::get_range_from_airsim(const msr::airlib::DistanceSensorData& dist_data) const
-{
-    sensor_msgs::Range dist_msg;
-    dist_msg.header.stamp = airsim_timestamp_to_ros(dist_data.time_stamp);
-    dist_msg.range = dist_data.distance;
-    dist_msg.min_range = dist_data.min_distance;
-    dist_msg.max_range = dist_data.min_distance;
+// sensor_msgs::Range AirsimNEDWrapper::get_range_from_airsim(const msr::airlib::DistanceSensorData& dist_data)
+// {
+//     sensor_msgs::Range dist_msg;
+//     dist_msg.header.stamp = make_ts(dist_data.time_stamp);
+//     dist_msg.range = dist_data.distance;
+//     dist_msg.min_range = dist_data.min_distance;
+//     dist_msg.max_range = dist_data.min_distance;
 
-    return dist_msg;
-}
+//     return dist_msg;
+// }
 
 // airsim_ros_pkgs::Altimeter AirsimNEDWrapper::get_altimeter_msg_from_airsim(const msr::airlib::BarometerBase::Output& alt_data) const
 // {
@@ -1019,7 +1028,7 @@ void AirsimNEDWrapper::publish_vehicle_tf(const nav_msgs::Odometry& odom_msg)
 {
     geometry_msgs::TransformStamped odom_tf;
     odom_tf.header.frame_id = map_frame_id_;
-    odom_tf.header.stamp = ros::Time::now();
+    odom_tf.header.stamp = odom_msg.header.stamp;// ros::Time::now();
     odom_tf.child_frame_id = vehicle_frame_id_;
     odom_tf.transform.translation.x = odom_msg.pose.pose.position.x;
     odom_tf.transform.translation.y = -odom_msg.pose.pose.position.y;
@@ -1106,7 +1115,7 @@ sensor_msgs::Imu AirsimNEDWrapper::get_imu_msg_from_airsim(const msr::airlib::Im
     // imu_msg.orientation_covariance = ;
     // imu_msg.angular_velocity_covariance = ;
     // imu_msg.linear_acceleration_covariance = ;
-    imu_msg.header.stamp = airsim_timestamp_to_ros(imu_data.time_stamp);
+    // imu_msg.header.stamp = airsim_timestamp_to_ros(imu_data.time_stamp);
     return imu_msg;
 }
 
@@ -1187,16 +1196,18 @@ void AirsimNEDWrapper::drone_state_timer_cb(const ros::TimerEvent& event)
         // {
             // get drone state from airsim
             std::unique_lock<std::recursive_mutex> lck(drone_control_mutex_);
+            ros::Time curr_ros_time = ros::Time::now();
             multirotor_ros->curr_drone_state = get_multirotor_client()->getMultirotorState(multirotor_ros->vehicle_name);
             lck.unlock();
-            ros::Time curr_ros_time = ros::Time::now();
 
             // convert airsim drone state to ROS msgs
             multirotor_ros->curr_odom = get_odom_msg_from_multirotor_state(multirotor_ros->curr_drone_state);
             // multirotor_ros.curr_odom_ned.header.frame_id = multirotor_ros.vehicle_name;
             multirotor_ros->curr_odom.child_frame_id = multirotor_ros->odom_frame_id;
+            multirotor_ros->curr_odom.header.stamp = curr_ros_time;
 
             multirotor_ros->curr_attitude = get_attitude_from_airsim_state(multirotor_ros->curr_drone_state);
+            multirotor_ros->curr_attitude.header.stamp = curr_ros_time;
             // multirotor_ros.curr_attitude.child_frame_id = multirotor_ros.odom_frame_id;
 
             // multirotor_ros.curr_odom_ned.header.stamp = curr_ros_time;
@@ -1303,163 +1314,172 @@ void AirsimNEDWrapper::drone_state_timer_cb(const ros::TimerEvent& event)
 
 void AirsimNEDWrapper::update_and_publish_static_transforms(VehicleROS* vehicle_ros)
 {
+    // TODO updating static makes no sense other than to check for newly added static tf, which would also be very uncommon midrun. make part of instantiation but not regular loop.
     if (vehicle_ros && !vehicle_ros->static_tf_msg_vec.empty()) {
         for (auto& static_tf_msg : vehicle_ros->static_tf_msg_vec) {
-            static_tf_msg.header.stamp = vehicle_ros->stamp;
+            // static_tf_msg.header.stamp = vehicle_ros->stamp;
             static_tf_pub_.sendTransform(static_tf_msg);
         }
     }
 }
 
-ros::Time AirsimNEDWrapper::update_state()
-{
+// ros::Time AirsimNEDWrapper::update_state()
+// {
 
-    std::lock_guard<std::recursive_mutex> guard(drone_control_mutex_);
+//     std::lock_guard<std::recursive_mutex> guard(drone_control_mutex_);
 
-    bool got_sim_time = false;
-    ros::Time curr_ros_time = ros::Time::now();
+//     bool got_sim_time = false;
+//     // ros::Time curr_ros_time = ros::Time::now();
 
-    //should be easier way to get the sim time through API, something like:
-    //msr::airlib::Environment::State env = airsim_client_->simGetGroundTruthEnvironment("");
-    //curr_ros_time = airsim_timestamp_to_ros(env.clock().nowNanos());
+//     //should be easier way to get the sim time through API, something like:
+//     //msr::airlib::Environment::State env = airsim_client_->simGetGroundTruthEnvironment("");
+//     //curr_ros_time = airsim_timestamp_to_ros(env.clock().nowNanos());
 
-    // iterate over drones
-    // for (auto& vehicle_name_ptr_pair : vehicle_name_ptr_map_) {
-        // ros::Time vehicle_time;
-        // get drone state from airsim
-        // auto& vehicle_ros = vehicle_name_ptr_pair.second;
+//     // iterate over drones
+//     // for (auto& vehicle_name_ptr_pair : vehicle_name_ptr_map_) {
+//         // ros::Time vehicle_time;
+//         // get drone state from airsim
+//         // auto& vehicle_ros = vehicle_name_ptr_pair.second;
 
-        // vehicle environment, we can get ambient temperature here and other truths
-        // auto env_data = airsim_client_->simGetGroundTruthEnvironment(vehicle_ros->vehicle_name);
+//         // vehicle environment, we can get ambient temperature here and other truths
+//         // auto env_data = airsim_client_->simGetGroundTruthEnvironment(vehicle_ros->vehicle_name);
 
-        if (airsim_mode_ == AIRSIM_MODE::DRONE) {
-            auto drone = static_cast<MultiRotorROS*>(vehicle_ros_.get());
-            std::unique_lock<std::recursive_mutex> lck(drone_control_mutex_);
-            drone->curr_drone_state = get_multirotor_client()->getMultirotorState(vehicle_ros_->vehicle_name);
-            lck.unlock();
+//         if (airsim_mode_ == AIRSIM_MODE::DRONE) {
+//             auto drone = static_cast<MultiRotorROS*>(vehicle_ros_.get());
+//             std::unique_lock<std::recursive_mutex> lck(drone_control_mutex_);
+//             drone->curr_drone_state = get_multirotor_client()->getMultirotorState(vehicle_ros_->vehicle_name);
+//             lck.unlock();
 
-            // vehicle_time = airsim_timestamp_to_ros(drone->curr_drone_state.timestamp);
-            // if (!got_sim_time) {
-            //     curr_ros_time = vehicle_time;
-            //     got_sim_time = true;
-            // }
+//             // vehicle_time = airsim_timestamp_to_ros(drone->curr_drone_state.timestamp);
+//             // if (!got_sim_time) {
+//             //     curr_ros_time = vehicle_time;
+//             //     got_sim_time = true;
+//             // }
 
-            vehicle_ros_->gps_sensor_msg = get_gps_sensor_msg_from_airsim_geo_point(drone->curr_drone_state.gps_location);
-            vehicle_ros_->gps_sensor_msg.header.stamp = curr_ros_time;
+//             vehicle_ros_->gps_sensor_msg = get_gps_sensor_msg_from_airsim_geo_point(drone->curr_drone_state.gps_location);
+//             // vehicle_ros_->gps_sensor_msg.header.stamp = curr_ros_time;
 
-            vehicle_ros_->curr_odom = get_odom_msg_from_multirotor_state(drone->curr_drone_state);
-        }
-        else {
-            // auto car = static_cast<CarROS*>(vehicle_ros.get());
-            // car->curr_car_state = get_car_client()->getCarState(vehicle_ros->vehicle_name);
+//             vehicle_ros_->curr_odom = get_odom_msg_from_multirotor_state(drone->curr_drone_state);
+//         }
+//         else {
+//             // auto car = static_cast<CarROS*>(vehicle_ros.get());
+//             // car->curr_car_state = get_car_client()->getCarState(vehicle_ros->vehicle_name);
 
-            // vehicle_time = airsim_timestamp_to_ros(car->curr_car_state.timestamp);
-            // if (!got_sim_time) {
-            //     curr_ros_time = vehicle_time;
-            //     got_sim_time = true;
-            // }
+//             // vehicle_time = airsim_timestamp_to_ros(car->curr_car_state.timestamp);
+//             // if (!got_sim_time) {
+//             //     curr_ros_time = vehicle_time;
+//             //     got_sim_time = true;
+//             // }
 
-            // vehicle_ros->gps_sensor_msg = get_gps_sensor_msg_from_airsim_geo_point(env_data.geo_point);
-            // vehicle_ros->gps_sensor_msg.header.stamp = vehicle_time;
+//             // vehicle_ros->gps_sensor_msg = get_gps_sensor_msg_from_airsim_geo_point(env_data.geo_point);
+//             // vehicle_ros->gps_sensor_msg.header.stamp = vehicle_time;
 
-            // vehicle_ros->curr_odom = get_odom_msg_from_car_state(car->curr_car_state);
+//             // vehicle_ros->curr_odom = get_odom_msg_from_car_state(car->curr_car_state);
 
-            // airsim_ros_pkgs::CarState state_msg = get_roscarstate_msg_from_car_state(car->curr_car_state);
-            // state_msg.header.frame_id = vehicle_ros->vehicle_name;
-            // car->car_state_msg = state_msg;
-        }
+//             // airsim_ros_pkgs::CarState state_msg = get_roscarstate_msg_from_car_state(car->curr_car_state);
+//             // state_msg.header.frame_id = vehicle_ros->vehicle_name;
+//             // car->car_state_msg = state_msg;
+//         }
 
-        vehicle_ros_->stamp = curr_ros_time;
+//         vehicle_ros_->stamp = vehicle_ros_->curr_odom.header.stamp;
 
-        // airsim_ros_pkgs::Environment env_msg = get_environment_msg_from_airsim(env_data);
-        // env_msg.header.frame_id = vehicle_ros->vehicle_name;
-        // env_msg.header.stamp = vehicle_time;
-        // vehicle_ros->env_msg = env_msg;
+//         // airsim_ros_pkgs::Environment env_msg = get_environment_msg_from_airsim(env_data);
+//         // env_msg.header.frame_id = vehicle_ros->vehicle_name;
+//         // env_msg.header.stamp = vehicle_time;
+//         // vehicle_ros->env_msg = env_msg;
 
-        // convert airsim drone state to ROS msgs
-        vehicle_ros_->curr_odom.header.frame_id = map_frame_id_;
-        vehicle_ros_->curr_odom.child_frame_id = vehicle_frame_id_;
-        vehicle_ros_->curr_odom.header.stamp = curr_ros_time;
+//         // convert airsim drone state to ROS msgs
+//         vehicle_ros_->curr_odom.header.frame_id = map_frame_id_;
+//         vehicle_ros_->curr_odom.child_frame_id = vehicle_frame_id_;
+//         // vehicle_ros_->curr_odom.header.stamp = curr_ros_time;
+//     // }
+
+//     return vehicle_ros_->stamp;
+// }
+
+// void AirsimNEDWrapper::publish_vehicle_state()
+// {
+//     // for (auto& vehicle_name_ptr_pair : vehicle_name_ptr_map_) {
+//     //     auto& vehicle_ros = vehicle_name_ptr_pair.second;
+//     //     ROS_INFO("vehicle ros is %s", vehicle_ros->vehicle_name.c_str());
+
+//         // simulation environment truth
+//         // vehicle_ros->env_pub.publish(vehicle_ros->env_msg);
+
+//         // if (airsim_mode_ == AIRSIM_MODE::CAR) {
+//         //     // dashboard reading from car, RPM, gear, etc
+//         //     auto car = static_cast<CarROS*>(vehicle_ros.get());
+//         //     car->car_state_pub.publish(car->car_state_msg);
+//         // }
+
+//         // odom and transforms
+//         vehicle_ros_->odom_local_pub.publish(vehicle_ros_->curr_odom);
+//         publish_vehicle_tf(vehicle_ros_->curr_odom);
+
+//         // ground truth GPS position from sim/HITL
+//         vehicle_ros_->global_gps_pub.publish(vehicle_ros_->gps_sensor_msg);
+
+//         // for (auto& sensor_publisher : vehicle_ros->sensor_pubs) {
+//         //     switch (sensor_publisher.sensor_type) {
+//         //     // case SensorBase::SensorType::Barometer: {
+//         //     //     auto baro_data = airsim_client_->getBarometerData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
+//         //     //     airsim_ros_pkgs::Altimeter alt_msg = get_altimeter_msg_from_airsim(baro_data);
+//         //     //     alt_msg.header.frame_id = vehicle_ros->vehicle_name;
+//         //     //     sensor_publisher.publisher.publish(alt_msg);
+//         //     //     break;
+//         //     // }
+//         //     // case SensorBase::SensorType::Imu: {
+//         //     //     auto imu_data = airsim_client_->getImuData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
+//         //     //     sensor_msgs::Imu imu_msg = get_imu_msg_from_airsim(imu_data);
+//         //     //     imu_msg.header.frame_id = vehicle_frame_id_;
+//         //     //     sensor_publisher.publisher.publish(imu_msg);
+//         //     //     break;
+//         //     // }
+//         //     case SensorBase::SensorType::Distance: {
+//         //         auto distance_data = airsim_client_->getDistanceSensorData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
+//         //         sensor_msgs::Range dist_msg = get_range_from_airsim(distance_data);
+//         //         dist_msg.header.frame_id = vehicle_frame_id_;
+//         //         sensor_publisher.publisher.publish(dist_msg);
+//         //         break;
+//         //     }
+//         //     case SensorBase::SensorType::Gps: {
+//         //         auto gps_data = airsim_client_->getGpsData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
+//         //         sensor_msgs::NavSatFix gps_msg = get_gps_msg_from_airsim(gps_data);
+//         //         gps_msg.header.frame_id = vehicle_frame_id_;
+//         //         sensor_publisher.publisher.publish(gps_msg);
+//         //         break;
+//         //     }
+//         //     case SensorBase::SensorType::Lidar: {
+//         //         // handled via callback
+//         //         break;
+//         //     }
+//         //     case SensorBase::SensorType::Magnetometer: {
+//         //         auto mag_data = airsim_client_->getMagnetometerData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
+//         //         sensor_msgs::MagneticField mag_msg = get_mag_msg_from_airsim(mag_data);
+//         //         mag_msg.header.frame_id = vehicle_frame_id_;
+//         //         sensor_publisher.publisher.publish(mag_msg);
+//         //         break;
+//         //     }
+//         //     }
+//         // }
+
+//         update_and_publish_static_transforms(vehicle_ros_.get());
+//     // }
     // }
-
-    return curr_ros_time;
-}
-
-void AirsimNEDWrapper::publish_vehicle_state()
-{
-    // for (auto& vehicle_name_ptr_pair : vehicle_name_ptr_map_) {
-    //     auto& vehicle_ros = vehicle_name_ptr_pair.second;
-    //     ROS_INFO("vehicle ros is %s", vehicle_ros->vehicle_name.c_str());
-
-        // simulation environment truth
-        // vehicle_ros->env_pub.publish(vehicle_ros->env_msg);
-
-        // if (airsim_mode_ == AIRSIM_MODE::CAR) {
-        //     // dashboard reading from car, RPM, gear, etc
-        //     auto car = static_cast<CarROS*>(vehicle_ros.get());
-        //     car->car_state_pub.publish(car->car_state_msg);
-        // }
-
-        // odom and transforms
-        vehicle_ros_->odom_local_pub.publish(vehicle_ros_->curr_odom);
-        publish_vehicle_tf(vehicle_ros_->curr_odom);
-
-        // ground truth GPS position from sim/HITL
-        vehicle_ros_->global_gps_pub.publish(vehicle_ros_->gps_sensor_msg);
-
-        // for (auto& sensor_publisher : vehicle_ros->sensor_pubs) {
-        //     switch (sensor_publisher.sensor_type) {
-        //     // case SensorBase::SensorType::Barometer: {
-        //     //     auto baro_data = airsim_client_->getBarometerData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
-        //     //     airsim_ros_pkgs::Altimeter alt_msg = get_altimeter_msg_from_airsim(baro_data);
-        //     //     alt_msg.header.frame_id = vehicle_ros->vehicle_name;
-        //     //     sensor_publisher.publisher.publish(alt_msg);
-        //     //     break;
-        //     // }
-        //     // case SensorBase::SensorType::Imu: {
-        //     //     auto imu_data = airsim_client_->getImuData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
-        //     //     sensor_msgs::Imu imu_msg = get_imu_msg_from_airsim(imu_data);
-        //     //     imu_msg.header.frame_id = vehicle_frame_id_;
-        //     //     sensor_publisher.publisher.publish(imu_msg);
-        //     //     break;
-        //     // }
-        //     case SensorBase::SensorType::Distance: {
-        //         auto distance_data = airsim_client_->getDistanceSensorData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
-        //         sensor_msgs::Range dist_msg = get_range_from_airsim(distance_data);
-        //         dist_msg.header.frame_id = vehicle_frame_id_;
-        //         sensor_publisher.publisher.publish(dist_msg);
-        //         break;
-        //     }
-        //     case SensorBase::SensorType::Gps: {
-        //         auto gps_data = airsim_client_->getGpsData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
-        //         sensor_msgs::NavSatFix gps_msg = get_gps_msg_from_airsim(gps_data);
-        //         gps_msg.header.frame_id = vehicle_frame_id_;
-        //         sensor_publisher.publisher.publish(gps_msg);
-        //         break;
-        //     }
-        //     case SensorBase::SensorType::Lidar: {
-        //         // handled via callback
-        //         break;
-        //     }
-        //     case SensorBase::SensorType::Magnetometer: {
-        //         auto mag_data = airsim_client_->getMagnetometerData(sensor_publisher.sensor_name, vehicle_ros->vehicle_name);
-        //         sensor_msgs::MagneticField mag_msg = get_mag_msg_from_airsim(mag_data);
-        //         mag_msg.header.frame_id = vehicle_frame_id_;
-        //         sensor_publisher.publisher.publish(mag_msg);
-        //         break;
-        //     }
-        //     }
-        // }
-
-        update_and_publish_static_transforms(vehicle_ros_.get());
     // }
-}
+// }
+// }
+    // }
+    // }
+// }
+// }
+// }
 
 void AirsimNEDWrapper::publish_odom_tf(const nav_msgs::Odometry& odom_ned_msg)
 {
     geometry_msgs::TransformStamped odom_tf;
     odom_tf.header.frame_id = odom_frame_id_;
-    odom_tf.header.stamp = ros::Time::now();
+    odom_tf.header.stamp = odom_ned_msg.header.stamp;// ros::Time::now();
     odom_tf.child_frame_id = vehicle_frame_id_ + "/" + odom_frame_id_; 
     odom_tf.transform.translation.x = odom_ned_msg.pose.pose.position.x;
     odom_tf.transform.translation.y = odom_ned_msg.pose.pose.position.y;
@@ -1669,11 +1689,12 @@ void AirsimNEDWrapper::lidar_timer_cb(const ros::TimerEvent& event)
             for (const auto& vehicle_lidar_pair: vehicle_lidar_map_)
             {
                 std::unique_lock<std::recursive_mutex> lck(drone_control_mutex_);
+                ros::Time curr_ros_time = ros::Time::now();
                 auto lidar_data = airsim_client_lidar_.getLidarData(vehicle_lidar_pair.second, vehicle_lidar_pair.first); // airsim api is imu_name, vehicle_name
                 lck.unlock();
                 sensor_msgs::PointCloud2 lidar_msg = get_lidar_msg_from_airsim(lidar_data); // todo make const ptr msg to avoid copy
                 lidar_msg.header.frame_id = vehicle_frame_id_+ "/" + vehicle_lidar_pair.second; // sensor frame name. todo add to doc
-                lidar_msg.header.stamp = airsim_timestamp_to_ros(lidar_data.time_stamp);// ros::Time::now();
+                lidar_msg.header.stamp = curr_ros_time;
                 lidar_pub_vec_[ctr].publish(lidar_msg);
                 ctr++;
             } 

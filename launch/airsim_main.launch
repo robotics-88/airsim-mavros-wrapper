@@ -18,13 +18,13 @@
     <arg name="ardupilot" default="true"/>
     <include file="$(find airsim_launch)/launch/airsim_ardupilot.launch" if="$(arg ardupilot)"/>
     <include file="$(find airsim_launch)/launch/airsim_px4.launch" unless="$(arg ardupilot)"/>
-    <node pkg="rosservice" type="rosservice" name="rosservice" args="call --wait /mavros/set_stream_rate 0 20 1"/>
+    <node pkg="rosservice" type="rosservice" name="rosservice" args="call --wait /mavros/set_stream_rate 0 10 1"/>
 
     <!-- AirSim publish rates -->
     <arg name="image_pub_freq" default=".05"/>
     <arg name="lidar_pub_freq" default=".1"/>
     <arg name="control_pub_freq" default=".1"/>
-    <arg name="update_imu_n_sec" default=".01"/>
+    <arg name="update_imu_n_sec" default=".1"/>
 
     <!-- Common control args -->
     <arg name="min_alt" default="0.2"/>
@@ -32,7 +32,8 @@
     <arg name="default_alt" default="2.0"/> <!-- Must be between min/max or path planning fails -->
     <arg name="default_speed" default="2.0"/> <!-- m/s-->
     <arg name="goal_topic" default="/mavros/setpoint_position/local"/> <!-- for mavros without OA, use /mavros/setpoint_position/local. default is /goal.-->
-    <arg name="imu_topic" default="$(arg vehicle_name)/imu/Imu"/>
+    <!-- <arg name="imu_topic" default="$(arg vehicle_name)/imu/Imu"/> -->
+    <arg name="imu_topic" default="/mavros/imu/data"/>
     <arg name="map_resolution" default="1.0"/> <!-- m-->
 
     <!-- <param name="/use_sim_time" value="true"/> -->
@@ -44,6 +45,7 @@
         <param name="update_airsim_img_response_every_n_sec" value="$(arg image_pub_freq)" />
         <param name="update_lidar_every_n_sec" value="$(arg lidar_pub_freq)" />
         <param name="update_airsim_control_every_n_sec" value="$(arg control_pub_freq)" />
+        <param name="update_imu_n_sec" value="$(arg update_imu_n_sec)" />
         <param name="vehicle_frame_id" value="$(arg vehicle_frame)" />
         <param name="odom_frame_id" value="$(arg odom_frame)" />
         <param name="map_frame_id" value="$(arg map_frame)" />
