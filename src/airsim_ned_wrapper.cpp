@@ -7,6 +7,7 @@ Author: Erin Linebarger <erin@robotics88.com>
 #include <boost/make_shared.hpp>
 #include "common/AirSimSettings.hpp"
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 
 // constexpr char AirsimNEDWrapper::CAM_YML_NAME[];
 // constexpr char AirsimNEDWrapper::WIDTH_YML_NAME[];
@@ -816,7 +817,7 @@ sensor_msgs::PointCloud2 AirsimNEDWrapper::get_lidar_msg_from_airsim(const msr::
 {
     // TODO need to rotate PCL 180 degrees about x-axis, since reconfiguring for base_link/FLU
     sensor_msgs::PointCloud2 lidar_msg;
-    lidar_msg.header.frame_id = world_frame_id_; // todo
+    // lidar_msg.header.frame_id = world_frame_id_; // todo
 
     if (lidar_data.point_cloud.size() > 3)
     {
@@ -861,7 +862,7 @@ sensor_msgs::PointCloud2 AirsimNEDWrapper::get_lidar_msg_from_airsim(const msr::
 {
     sensor_msgs::PointCloud2 lidar_msg;
     lidar_msg.header.stamp = ros::Time::now();
-    lidar_msg.header.frame_id = vehicle_name + "/" + sensor_name;
+    // lidar_msg.header.frame_id = vehicle_name + "/" + sensor_name;
 
     if (lidar_data.point_cloud.size() > 3) {
         lidar_msg.height = 1;
@@ -1550,10 +1551,20 @@ void AirsimNEDWrapper::append_static_lidar_tf(VehicleROS* vehicle_ros, const std
     lidar_tf_msg.transform.translation.x = lidar_setting.relative_pose.position.x();
     lidar_tf_msg.transform.translation.y = - lidar_setting.relative_pose.position.y();
     lidar_tf_msg.transform.translation.z = - lidar_setting.relative_pose.position.z();
-    lidar_tf_msg.transform.rotation.x = lidar_setting.relative_pose.orientation.x();
-    lidar_tf_msg.transform.rotation.y = - lidar_setting.relative_pose.orientation.y();
-    lidar_tf_msg.transform.rotation.z = - lidar_setting.relative_pose.orientation.z();
-    lidar_tf_msg.transform.rotation.w = lidar_setting.relative_pose.orientation.w();
+
+    // Add PI to pitch, yaw, because AirSim settings process it as attached to a NED frame but should be FLU
+    tf2::Quaternion quat(lidar_setting.relative_pose.orientation.x(), lidar_setting.relative_pose.orientation.y(), lidar_setting.relative_pose.orientation.z(), lidar_setting.relative_pose.orientation.w());
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+    pitch = pitch + M_PI;
+    yaw = yaw + M_PI;
+    quat.setRPY(roll, pitch, yaw);
+    quat.normalize();
+
+    lidar_tf_msg.transform.rotation.x = quat.getX();
+    lidar_tf_msg.transform.rotation.y = quat.getY();
+    lidar_tf_msg.transform.rotation.z = quat.getZ();
+    lidar_tf_msg.transform.rotation.w = quat.getW();
 
     if (isENU_) {
         std::swap(lidar_tf_msg.transform.translation.x, lidar_tf_msg.transform.translation.y);

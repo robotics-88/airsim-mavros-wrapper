@@ -22,9 +22,9 @@
 
     <!-- AirSim publish rates -->
     <arg name="image_pub_freq" default=".05"/>
-    <arg name="lidar_pub_freq" default=".3"/>
+    <arg name="lidar_pub_freq" default=".1"/>
     <arg name="control_pub_freq" default=".1"/>
-    <arg name="update_imu_n_sec" default=".1"/>
+    <arg name="update_imu_n_sec" default=".01"/>
 
     <!-- Common control args -->
     <arg name="min_alt" default="0.2"/>
