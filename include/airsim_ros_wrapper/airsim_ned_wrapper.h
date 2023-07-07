@@ -406,6 +406,7 @@ private:
     ros::Timer airsim_control_update_timer_;
     ros::Timer airsim_imu_update_timer_;
     ros::Timer airsim_lidar_update_timer_;
+    ros::ServiceClient mavros_client_;
 
     typedef std::pair<std::vector<ImageRequest>, std::string> airsim_img_request_vehicle_name_pair;
     std::vector<airsim_img_request_vehicle_name_pair> airsim_img_request_vehicle_name_pair_vec_;

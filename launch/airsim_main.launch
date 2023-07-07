@@ -18,7 +18,8 @@
     <arg name="ardupilot" default="true"/>
     <include file="$(find airsim_launch)/launch/airsim_ardupilot.launch" if="$(arg ardupilot)"/>
     <include file="$(find airsim_launch)/launch/airsim_px4.launch" unless="$(arg ardupilot)"/>
-    <node pkg="rosservice" type="rosservice" name="rosservice" args="call --wait /mavros/set_stream_rate 0 10 1"/>
+    <!-- Leaving this rosservice call in, but it doesnt appear to work in AirSim. Inside the node, have to repeatedly call this service to achieve the effect -->
+    <node pkg="rosservice" type="rosservice" name="rosservice" args="call - -wait /mavros/set_stream_rate 0 100 1"/>
 
     <!-- AirSim publish rates -->
     <arg name="image_pub_freq" default=".05"/>
@@ -59,26 +60,27 @@
         <param name="depth_info" value="$(arg depth_info)"/>
     </node>
 
-    <include file="$(find airsim_launch)/launch/airsim_oa.launch">
+    <!-- <include file="$(find airsim_launch)/launch/airsim_oa.launch">
         <arg name="min_alt" value="$(arg min_alt)"/>
         <arg name="max_alt" value="$(arg max_alt)"/>
         <arg name="imu_topic" value="$(arg imu_topic)"/>
         <arg name="raw_cloud_topic" value="$(arg raw_lidar_topic)"/>
         <arg name="reg_cloud_topic" value="$(arg registered_lidar_topic)"/>
-    </include>
+    </include> -->
 
     <node pkg="path_to_mavros" type="path_to_mavros_node" respawn="false" name="path_to_mavros" output="screen">
         <param name="default_speed" value="$(arg default_speed)"/>
     </node>
 
     <include file="$(find octomap_slice)/launch/octomap_full_handling.launch">
-        <arg name="cloud_topic" value="$(arg registered_lidar_topic)"/>
+        <arg name="cloud_topic" value="$(arg raw_lidar_topic)"/>
         <arg name="octomap_res" value="$(arg map_resolution)"/>
         <arg name="slice_height" value="$(arg default_alt)"/>
         <arg name="rviz" value="false"/>
     </include>
 
     <include file="$(find explore_uav)/launch/explore.launch">
+        <arg name="cloud_in" value="$(arg raw_lidar_topic)"/>
         <arg name="robot_base_frame" value="$(arg vehicle_frame)"/>
         <arg name="default_alt" value="$(arg default_alt)"/>
         <arg name="goal_topic" value="$(arg goal_topic)"/>
@@ -89,6 +91,7 @@
         <arg name="enable_autonomy" value="$(arg enable_autonomy)"/>
         <arg name="enable_exploration" value="$(arg enable_exploration)"/>
         <arg name="default_altitude_m" value="$(arg default_alt)"/>
+        <arg name="ardupilot" value="$(arg ardupilot)"/>
     </include>
 
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>

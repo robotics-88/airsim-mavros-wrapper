@@ -9,6 +9,8 @@ Author: Erin Linebarger <erin@robotics88.com>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 
+#include <mavros_msgs/StreamRate.h>
+
 // constexpr char AirsimNEDWrapper::CAM_YML_NAME[];
 // constexpr char AirsimNEDWrapper::WIDTH_YML_NAME[];
 // constexpr char AirsimNEDWrapper::HEIGHT_YML_NAME[];
@@ -137,6 +139,7 @@ void AirsimNEDWrapper::initialize_ros()
     // todo enforce dynamics constraints in this node as well?
     // nh_.getParam("max_vert_vel_", max_vert_vel_);
     // nh_.getParam("max_horz_vel", max_horz_vel_)
+    mavros_client_ = nh_.serviceClient<mavros_msgs::StreamRate>("/mavros/set_stream_rate");
 
     create_ros_pubs_from_settings_json();
     ROS_INFO("Drone control %fms", update_airsim_control_every_n_sec*1000);
@@ -1121,32 +1124,43 @@ sensor_msgs::Imu AirsimNEDWrapper::get_imu_msg_from_airsim(const msr::airlib::Im
 
 void AirsimNEDWrapper::drone_imu_timer_cb(const ros::TimerEvent& event)
 {
-    try
-    {
-        if (imu_pub_vec_.size() > 0)
-        {
-            int ctr = 0;
-            for (const auto& vehicle_imu_pair: vehicle_imu_map_)
-            {
-                std::unique_lock<std::recursive_mutex> lck(drone_control_mutex_);
-                ros::Time curr_ros_time = ros::Time::now();
-                auto imu_data = get_multirotor_client()->getImuData(vehicle_imu_pair.second, vehicle_imu_pair.first);
-                lck.unlock();
-                sensor_msgs::Imu imu_msg = get_imu_msg_from_airsim(imu_data);
-                imu_msg.header.stamp = curr_ros_time;
-                // imu_msg.header.frame_id = vehicle_imu_pair.first;
-                imu_pub_vec_[ctr].publish(imu_msg);
-                ctr++;
-            } 
-        }
-    }
+    // TODO: for now, IMU timer cb does nothing. Waiting to see what IMU requirements based on a better SLAM algorithm. Use /mavros/imu/data (default hz for AP is 3 Hz, low but so far fine without SLAM)
 
-    catch (rpc::rpc_error& e)
-    {
-        std::cout << "error" << std::endl;
-        std::string msg = e.get_error().as<std::string>();
-        std::cout << "Exception raised by the API:" << std::endl << msg << std::endl;
-    }
+    // Uncomment this section if require high Hz on /mavros/imu/data (may lower the quality of IMU data based on small number of tests)
+    // mavros_msgs::StreamRate stream_rate_msg;
+    // stream_rate_msg.request.message_rate = 100;
+    // stream_rate_msg.request.on_off = 1; // on
+    // stream_rate_msg.request.stream_id = 0;
+    // mavros_client_.call(stream_rate_msg);
+
+    // Uncomment below if require the airsim_ros_node Imu topic, but experience suggests it is very inaccurate and MAVROS IMU should be preferred
+
+    // try
+    // {
+    //     if (imu_pub_vec_.size() > 0)
+    //     {
+    //         int ctr = 0;
+    //         for (const auto& vehicle_imu_pair: vehicle_imu_map_)
+    //         {
+    //             std::unique_lock<std::recursive_mutex> lck(drone_control_mutex_);
+    //             ros::Time curr_ros_time = ros::Time::now();
+    //             auto imu_data = get_multirotor_client()->getImuData(vehicle_imu_pair.second, vehicle_imu_pair.first);
+    //             lck.unlock();
+    //             sensor_msgs::Imu imu_msg = get_imu_msg_from_airsim(imu_data);
+    //             imu_msg.header.stamp = curr_ros_time;
+    //             // imu_msg.header.frame_id = vehicle_imu_pair.first;
+    //             imu_pub_vec_[ctr].publish(imu_msg);
+    //             ctr++;
+    //         } 
+    //     }
+    // }
+
+    // catch (rpc::rpc_error& e)
+    // {
+    //     std::cout << "error" << std::endl;
+    //     std::string msg = e.get_error().as<std::string>();
+    //     std::cout << "Exception raised by the API:" << std::endl << msg << std::endl;
+    // }
 }
 
 // void AirsimNEDWrapper::drone_state_timer_cb(const ros::TimerEvent& event)
