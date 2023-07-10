@@ -36,6 +36,7 @@
     <!-- <arg name="imu_topic" default="$(arg vehicle_name)/imu/Imu"/> -->
     <arg name="imu_topic" default="/mavros/imu/data"/>
     <arg name="map_resolution" default="1.0"/> <!-- m-->
+    <arg name="max_dist_to_polygon" default="3000"/>
 
     <!-- <param name="/use_sim_time" value="true"/> -->
 
@@ -92,6 +93,7 @@
         <arg name="enable_exploration" value="$(arg enable_exploration)"/>
         <arg name="default_altitude_m" value="$(arg default_alt)"/>
         <arg name="ardupilot" value="$(arg ardupilot)"/>
+        <arg name="max_dist_to_polygon" value="$(arg max_dist_to_polygon)"/>
     </include>
 
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
