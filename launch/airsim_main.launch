@@ -19,7 +19,7 @@
     <include file="$(find airsim_launch)/launch/airsim_ardupilot.launch" if="$(arg ardupilot)"/>
     <include file="$(find airsim_launch)/launch/airsim_px4.launch" unless="$(arg ardupilot)"/>
     <!-- Leaving this rosservice call in, but it doesnt appear to work in AirSim. Inside the node, have to repeatedly call this service to achieve the effect -->
-    <node pkg="rosservice" type="rosservice" name="rosservice" args="call - -wait /mavros/set_stream_rate 0 100 1"/>
+    <node pkg="rosservice" type="rosservice" name="rosservice" args="call --wait /mavros/set_stream_rate 0 100 1"/>
 
     <!-- AirSim publish rates -->
     <arg name="image_pub_freq" default=".05"/>
