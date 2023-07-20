@@ -54,6 +54,10 @@
         <param name="world_frame_id" value="$(arg world_frame)" />
     </node>
 
+    <node pkg="task_manager_88" type="task_manager" name="task_manager" output="screen">
+        <param name="goal_topic" value="$(arg goal_topic)"/>
+    </node>
+
     <arg name="depth_image" default="$(arg vehicle_name)/front_left_custom/DepthPlanar"/>
     <arg name="depth_info" default="$(arg vehicle_name)/front_left_custom/DepthPlanar/camera_info"/>
     <node pkg="depth_image_to_mavlink" type="depth_image_to_mavlink_node" respawn="false" name="depth_image_to_mavlink" output="screen">
