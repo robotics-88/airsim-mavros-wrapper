@@ -120,10 +120,7 @@ void AirsimNEDWrapper::initialize_ros()
     nh_private_.param("odom_frame_id", odom_frame_id_, odom_frame_id_);
     nh_private_.getParam("update_imu_n_sec", imu_n_sec);
     nh_private_.getParam("enable_cameras", enable_cameras_);
-    vel_cmd_duration_ = 0.05; // todo rosparam
-    // todo enforce dynamics constraints in this node as well?
-    // nh_.getParam("max_vert_vel_", max_vert_vel_);
-    // nh_.getParam("max_horz_vel", max_horz_vel_)
+
     mavros_client_ = nh_.serviceClient<mavros_msgs::StreamRate>("/mavros/set_stream_rate");
 
     create_ros_pubs_from_settings_json();
@@ -132,14 +129,8 @@ void AirsimNEDWrapper::initialize_ros()
     airsim_imu_update_timer_ = nh_.createTimer(ros::Duration(imu_n_sec), &AirsimNEDWrapper::drone_imu_timer_cb, this);
 }
 
-// XmlRpc::XmlRpcValue can't be const in this case
 void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
 {
-    // subscribe to control commands on global nodehandle
-    // gimbal_angle_quat_cmd_sub_ = nh_private_.subscribe("gimbal_angle_quat_cmd", 50, &AirsimNEDWrapper::gimbal_angle_quat_cmd_cb, this);
-    // gimbal_angle_euler_cmd_sub_ = nh_private_.subscribe("gimbal_angle_euler_cmd", 50, &AirsimNEDWrapper::gimbal_angle_euler_cmd_cb, this);
-    // origin_geo_point_pub_ = nh_private_.advertise<airsim_ros_pkgs::GPSYaw>("origin_geo_point", 10);
-
     airsim_img_request_vehicle_name_pair_vec_.clear();
     image_pub_vec_.clear();
     cam_info_pub_vec_.clear();
@@ -188,15 +179,11 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
 
             set_nans_to_zeros_in_pose(*vehicle_setting, camera_setting);
             append_static_camera_tf(vehicle_ros_.get(), curr_camera_name, camera_setting);
-            // camera_setting.gimbal
-            // std::vector<ImageRequest> current_image_request_vec;
 
             // iterate over capture_setting std::map<int, CaptureSetting> capture_settings
             for (const auto& curr_capture_elem : camera_setting.capture_settings) {
                 const auto& capture_setting = curr_capture_elem.second;
 
-                // todo why does AirSimSettings::loadCaptureSettings calls AirSimSettings::initializeCaptureSettings()
-                // which initializes default capture settings for _all_ NINE msr::airlib::ImageCaptureBase::ImageType
                 if (!(std::isnan(capture_setting.fov_degrees))) {
                     const ImageType curr_image_type = msr::airlib::Utils::toEnum<ImageType>(capture_setting.image_type);
                     // if scene / segmentation / surface normals / infrared, get uncompressed image with pixels_as_floats = false
@@ -305,67 +292,11 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
     initialize_airsim();
 }
 
-
-tf2::Quaternion AirsimNEDWrapper::get_tf2_quat(const msr::airlib::Quaternionr& airlib_quat) const
-{
-    return tf2::Quaternion(airlib_quat.x(), airlib_quat.y(), airlib_quat.z(), airlib_quat.w());
-}
-
-msr::airlib::Quaternionr AirsimNEDWrapper::get_airlib_quat(const geometry_msgs::Quaternion& geometry_msgs_quat) const
-{
-    return msr::airlib::Quaternionr(geometry_msgs_quat.w, geometry_msgs_quat.x, geometry_msgs_quat.y, geometry_msgs_quat.z);
-}
-
-msr::airlib::Quaternionr AirsimNEDWrapper::get_airlib_quat(const tf2::Quaternion& tf2_quat) const
-{
-    return msr::airlib::Quaternionr(tf2_quat.w(), tf2_quat.x(), tf2_quat.y(), tf2_quat.z());
-}
-
-msr::airlib::Pose AirsimNEDWrapper::get_airlib_pose(const float& x, const float& y, const float& z, const msr::airlib::Quaternionr& airlib_quat) const
-{
-    return msr::airlib::Pose(msr::airlib::Vector3r(x, y, z), airlib_quat);
-}
-
-nav_msgs::Odometry AirsimNEDWrapper::get_odom_msg_from_car_state(const msr::airlib::CarApiBase::CarState& car_state) const
-{
-    nav_msgs::Odometry odom_msg;
-
-    odom_msg.pose.pose.position.x = car_state.getPosition().x();
-    odom_msg.pose.pose.position.y = car_state.getPosition().y();
-    odom_msg.pose.pose.position.z = car_state.getPosition().z();
-    odom_msg.pose.pose.orientation.x = car_state.getOrientation().x();
-    odom_msg.pose.pose.orientation.y = car_state.getOrientation().y();
-    odom_msg.pose.pose.orientation.z = car_state.getOrientation().z();
-    odom_msg.pose.pose.orientation.w = car_state.getOrientation().w();
-
-    odom_msg.twist.twist.linear.x = car_state.kinematics_estimated.twist.linear.x();
-    odom_msg.twist.twist.linear.y = car_state.kinematics_estimated.twist.linear.y();
-    odom_msg.twist.twist.linear.z = car_state.kinematics_estimated.twist.linear.z();
-    odom_msg.twist.twist.angular.x = car_state.kinematics_estimated.twist.angular.x();
-    odom_msg.twist.twist.angular.y = car_state.kinematics_estimated.twist.angular.y();
-    odom_msg.twist.twist.angular.z = car_state.kinematics_estimated.twist.angular.z();
-
-    if (isENU_) {
-        std::swap(odom_msg.pose.pose.position.x, odom_msg.pose.pose.position.y);
-        odom_msg.pose.pose.position.z = -odom_msg.pose.pose.position.z;
-        std::swap(odom_msg.pose.pose.orientation.x, odom_msg.pose.pose.orientation.y);
-        odom_msg.pose.pose.orientation.z = -odom_msg.pose.pose.orientation.z;
-        std::swap(odom_msg.twist.twist.linear.x, odom_msg.twist.twist.linear.y);
-        odom_msg.twist.twist.linear.z = -odom_msg.twist.twist.linear.z;
-        std::swap(odom_msg.twist.twist.angular.x, odom_msg.twist.twist.angular.y);
-        odom_msg.twist.twist.angular.z = -odom_msg.twist.twist.angular.z;
-    }
-
-    return odom_msg;
-}
-
 nav_msgs::Odometry AirsimNEDWrapper::get_odom_msg_from_multirotor_state(const msr::airlib::MultirotorState& drone_state)
 {
 
     // FLU 
     nav_msgs::Odometry odom_flu_msg;
-    // odom_flu_msg.header.stamp = make_ts(drone_state.timestamp);
-    // odom_flu_msg.header.frame_id = world_frame_id_;
     odom_flu_msg.pose.pose.position.x = drone_state.getPosition().x();
     odom_flu_msg.pose.pose.position.y = -drone_state.getPosition().y();
     odom_flu_msg.pose.pose.position.z = -drone_state.getPosition().z();
@@ -395,9 +326,6 @@ nav_msgs::Odometry AirsimNEDWrapper::get_odom_msg_from_multirotor_state(const ms
 geometry_msgs::QuaternionStamped AirsimNEDWrapper::get_attitude_from_airsim_state(const msr::airlib::MultirotorState& drone_state)
 {
     geometry_msgs::QuaternionStamped attitude;
-    // odom_ned_msg.header.frame_id = world_frame_id_;
-    // odom_ned_msg.child_frame_id = "/airsim/odom_local_ned"; // todo make param
-    // attitude.header.stamp = make_ts(drone_state.timestamp);
     attitude.quaternion.x = drone_state.getOrientation().x();
     attitude.quaternion.y = drone_state.getOrientation().y();
     attitude.quaternion.z = drone_state.getOrientation().z();
@@ -411,9 +339,7 @@ geometry_msgs::QuaternionStamped AirsimNEDWrapper::get_attitude_from_airsim_stat
 // read this carefully https://docs.ros.org/kinetic/api/sensor_msgs/html/msg/PointCloud2.html
 sensor_msgs::PointCloud2 AirsimNEDWrapper::get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data) const
 {
-    // TODO need to rotate PCL 180 degrees about x-axis, since reconfiguring for base_link/FLU
     sensor_msgs::PointCloud2 lidar_msg;
-    // lidar_msg.header.frame_id = world_frame_id_; // todo
 
     if (lidar_data.point_cloud.size() > 3)
     {
@@ -451,63 +377,6 @@ sensor_msgs::PointCloud2 AirsimNEDWrapper::get_lidar_msg_from_airsim(const msr::
     return lidar_msg;
 }
 
-// https://docs.ros.org/jade/api/sensor_msgs/html/point__cloud__conversion_8h_source.html#l00066
-// look at UnrealLidarSensor.cpp UnrealLidarSensor::getPointCloud() for math
-// read this carefully https://docs.ros.org/kinetic/api/sensor_msgs/html/msg/PointCloud2.html
-sensor_msgs::PointCloud2 AirsimNEDWrapper::get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data, const std::string& vehicle_name, const std::string& sensor_name) const
-{
-    sensor_msgs::PointCloud2 lidar_msg;
-    // lidar_msg.header.stamp = ros::Time::now();
-    // lidar_msg.header.frame_id = vehicle_name + "/" + sensor_name;
-
-    if (lidar_data.point_cloud.size() > 3) {
-        lidar_msg.height = 1;
-        lidar_msg.width = lidar_data.point_cloud.size() / 3;
-
-        lidar_msg.fields.resize(3);
-        lidar_msg.fields[0].name = "x";
-        lidar_msg.fields[1].name = "y";
-        lidar_msg.fields[2].name = "z";
-
-        int offset = 0;
-
-        for (size_t d = 0; d < lidar_msg.fields.size(); ++d, offset += 4) {
-            lidar_msg.fields[d].offset = offset;
-            lidar_msg.fields[d].datatype = sensor_msgs::PointField::FLOAT32;
-            lidar_msg.fields[d].count = 1;
-        }
-
-        lidar_msg.is_bigendian = false;
-        lidar_msg.point_step = offset; // 4 * num fields
-        lidar_msg.row_step = lidar_msg.point_step * lidar_msg.width;
-
-        lidar_msg.is_dense = true; // todo
-        std::vector<float> data_std = lidar_data.point_cloud;
-
-        const unsigned char* bytes = reinterpret_cast<const unsigned char*>(data_std.data());
-        std::vector<unsigned char> lidar_msg_data(bytes, bytes + sizeof(float) * data_std.size());
-        lidar_msg.data = std::move(lidar_msg_data);
-    }
-
-    return lidar_msg;
-}
-
-void AirsimNEDWrapper::publish_vehicle_tf(const nav_msgs::Odometry& odom_msg)
-{
-    geometry_msgs::TransformStamped odom_tf;
-    odom_tf.header.frame_id = map_frame_id_;
-    odom_tf.header.stamp = odom_msg.header.stamp;// ros::Time::now();
-    odom_tf.child_frame_id = vehicle_frame_id_;
-    odom_tf.transform.translation.x = odom_msg.pose.pose.position.x;
-    odom_tf.transform.translation.y = -odom_msg.pose.pose.position.y;
-    odom_tf.transform.translation.z = -odom_msg.pose.pose.position.z;
-    odom_tf.transform.rotation.x = odom_msg.pose.pose.orientation.x;
-    odom_tf.transform.rotation.y = -odom_msg.pose.pose.orientation.y;
-    odom_tf.transform.rotation.z = -odom_msg.pose.pose.orientation.z;
-    odom_tf.transform.rotation.w = odom_msg.pose.pose.orientation.w;
-    tf_broadcaster_.sendTransform(odom_tf);
-}
-
 sensor_msgs::NavSatFix AirsimNEDWrapper::get_gps_sensor_msg_from_airsim_geo_point(const msr::airlib::GeoPoint& geo_point) const
 {
     sensor_msgs::NavSatFix gps_msg;
@@ -539,10 +408,10 @@ msr::airlib::MultirotorRpcLibClient* AirsimNEDWrapper::get_multirotor_client()
     return static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get());
 }
 
-msr::airlib::CarRpcLibClient* AirsimNEDWrapper::get_car_client()
-{
-    return static_cast<msr::airlib::CarRpcLibClient*>(airsim_client_.get());
-}
+// msr::airlib::CarRpcLibClient* AirsimNEDWrapper::get_car_client()
+// {
+//     return static_cast<msr::airlib::CarRpcLibClient*>(airsim_client_.get());
+// }
 
 ros::Time AirsimNEDWrapper::make_ts(uint64_t unreal_ts) {
     if (first_imu_unreal_ts < 0) {
@@ -915,8 +784,6 @@ sensor_msgs::CameraInfo AirsimNEDWrapper::generate_cam_info(const std::string& c
 
 void AirsimNEDWrapper::process_and_publish_img_response(const std::vector<ImageResponse>& img_response_vec, const int img_response_idx, const std::string& vehicle_name)
 {
-    // todo add option to use airsim time (image_response.TTimePoint) like Gazebo /use_sim_time param
-    // ros::Time curr_ros_time = ros::Time(0);
     int img_response_idx_internal = img_response_idx;
 
     for (const auto& curr_img_response : img_response_vec) {

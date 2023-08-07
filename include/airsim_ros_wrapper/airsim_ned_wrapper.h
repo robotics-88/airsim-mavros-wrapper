@@ -119,7 +119,7 @@ private:
         ros::Publisher env_pub;
         ros::Publisher attitude_pub;
         std::vector<SensorPublisher> sensor_pubs;
-        // handle lidar seperately for max performance as data is collected on its own thread/callback
+        // handle lidar separately for max performance as data is collected on its own thread/callback
         std::vector<SensorPublisher> lidar_pubs;
 
         nav_msgs::Odometry curr_odom;
@@ -166,14 +166,12 @@ private:
     void drone_imu_timer_cb(const ros::TimerEvent& event);
     void drone_state_timer_cb(const ros::TimerEvent& event); // update drone state from airsim_client_ every nth sec
     void lidar_timer_cb(const ros::TimerEvent& event);
-    // void gimbal_angle_euler_cmd_cb(const airsim_ros_pkgs::GimbalAngleEulerCmd& gimbal_angle_euler_cmd_msg);
 
     // state, returns the simulation timestamp best guess based on drone state timestamp, airsim needs to return timestap for environment
     void update_and_publish_static_transforms(VehicleROS* vehicle_ros);
     void publish_vehicle_state();
 
     /// ROS tf broadcasters
-    void publish_vehicle_tf(const nav_msgs::Odometry& odom_msg);
     void publish_odom_tf(const nav_msgs::Odometry& odom_ned_msg);
 
     /// camera helper methods
@@ -189,24 +187,14 @@ private:
     void create_ros_pubs_from_settings_json();
     void append_static_camera_tf(VehicleROS* vehicle_ros, const std::string& camera_name, const CameraSetting& camera_setting);
     void append_static_lidar_tf(VehicleROS* vehicle_ros, const std::string& lidar_name, const msr::airlib::LidarSimpleParams& lidar_setting);
-    void append_static_vehicle_tf(VehicleROS* vehicle_ros, const VehicleSetting& vehicle_setting);
     void set_nans_to_zeros_in_pose(VehicleSetting& vehicle_setting) const;
     void set_nans_to_zeros_in_pose(const VehicleSetting& vehicle_setting, CameraSetting& camera_setting) const;
-    void set_nans_to_zeros_in_pose(const VehicleSetting& vehicle_setting, LidarSetting& lidar_setting) const;
 
     /// utils. todo parse into an Airlib<->ROS conversion class
-    tf2::Quaternion get_tf2_quat(const msr::airlib::Quaternionr& airlib_quat) const;
-    msr::airlib::Quaternionr get_airlib_quat(const geometry_msgs::Quaternion& geometry_msgs_quat) const;
-    msr::airlib::Quaternionr get_airlib_quat(const tf2::Quaternion& tf2_quat) const;
     nav_msgs::Odometry get_odom_msg_from_multirotor_state(const msr::airlib::MultirotorState& drone_state);
-    nav_msgs::Odometry get_odom_msg_from_car_state(const msr::airlib::CarApiBase::CarState& car_state) const;
     geometry_msgs::QuaternionStamped get_attitude_from_airsim_state(const msr::airlib::MultirotorState& drone_state);
-    msr::airlib::Pose get_airlib_pose(const float& x, const float& y, const float& z, const msr::airlib::Quaternionr& airlib_quat) const;
     sensor_msgs::NavSatFix get_gps_sensor_msg_from_airsim_geo_point(const msr::airlib::GeoPoint& geo_point) const;
-    sensor_msgs::Range get_range_from_airsim(const msr::airlib::DistanceSensorData& dist_data);
     sensor_msgs::PointCloud2 get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data) const;
-    sensor_msgs::PointCloud2 get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data, const std::string& vehicle_name, const std::string& sensor_name) const;
-    sensor_msgs::NavSatFix get_gps_msg_from_airsim(const msr::airlib::GpsBase::Output& gps_data);
     sensor_msgs::MagneticField get_mag_msg_from_airsim(const msr::airlib::MagnetometerBase::Output& mag_data);
     sensor_msgs::Imu get_imu_msg_from_airsim(const msr::airlib::ImuBase::Output& imu_data);
 
@@ -230,23 +218,7 @@ private:
 
     std::string settings_text_;
 
-    // subscriber / services for ALL robots
-    ros::Subscriber vel_cmd_all_body_frame_sub_;
-    ros::Subscriber vel_cmd_all_world_frame_sub_;
-    ros::ServiceServer takeoff_all_srvr_;
-    ros::ServiceServer land_all_srvr_;
-
-    // todo - subscriber / services for a GROUP of robots, which is defined by a list of `vehicle_name`s passed in the ros msg / srv request
-    ros::Subscriber vel_cmd_group_body_frame_sub_;
-    ros::Subscriber vel_cmd_group_world_frame_sub_;
-    ros::ServiceServer takeoff_group_srvr_;
-    ros::ServiceServer land_group_srvr_;
-
     AIRSIM_MODE airsim_mode_ = AIRSIM_MODE::DRONE;
-
-    ros::ServiceServer reset_srvr_;
-    ros::Publisher origin_geo_point_pub_; // home geo coord of drones
-    msr::airlib::GeoPoint origin_geo_point_; // gps coord of unreal origin
 
     std::unordered_map<std::string, std::unique_ptr<VehicleROS>> vehicle_name_ptr_map_;
     std::unique_ptr<VehicleROS> vehicle_ros_;
@@ -287,7 +259,6 @@ private:
     tf2_ros::TransformListener tf_listener_;
 
     /// ROS params
-    double vel_cmd_duration_;
     bool enable_cameras_;
 
     /// ROS Timers.
@@ -310,9 +281,6 @@ private:
     ros::Publisher clock_pub_;
     rosgraph_msgs::Clock ros_clock_;
     bool publish_clock_ = false;
-
-    ros::Subscriber gimbal_angle_quat_cmd_sub_;
-    ros::Subscriber gimbal_angle_euler_cmd_sub_;
 
 };
 
