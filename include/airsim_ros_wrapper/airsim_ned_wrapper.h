@@ -400,6 +400,7 @@ private:
 
     /// ROS params
     double vel_cmd_duration_;
+    bool enable_cameras_;
 
     /// ROS Timers.
     ros::Timer airsim_img_response_timer_;

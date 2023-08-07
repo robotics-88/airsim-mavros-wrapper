@@ -3,7 +3,7 @@
     <arg name="enable_autonomy" default="true"/>
     <arg name="enable_exploration" default="true"/>
 
-    <!-- Frames -->
+    <!-- Frame IDs -->
     <arg name="vehicle_name" default="/airsim_ros_node/base_link_frd"/>
     <arg name="vehicle_frame" default="base_link"/>
     <arg name="odom_frame" default="odom"/>
@@ -26,6 +26,7 @@
     <arg name="lidar_pub_freq" default=".1"/>
     <arg name="control_pub_freq" default=".1"/>
     <arg name="update_imu_n_sec" default=".1"/>
+    <arg name="enable_cameras" default="false"/> <!-- Enabling cameras slows the publish rate of everything to 3Hz so only enable if required -->
 
     <!-- Common control args -->
     <arg name="min_alt" default="0.2"/>
@@ -52,6 +53,7 @@
         <param name="odom_frame_id" value="$(arg odom_frame)" />
         <param name="map_frame_id" value="$(arg map_frame)" />
         <param name="world_frame_id" value="$(arg world_frame)" />
+        <param name="enable_cameras" value="$(arg enable_cameras)" />
     </node>
 
     <node pkg="task_manager_88" type="task_manager" name="task_manager" output="screen">

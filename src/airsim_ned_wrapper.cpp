@@ -50,6 +50,7 @@ AirsimNEDWrapper::AirsimNEDWrapper(const ros::NodeHandle& nh)
     , airsim_client_lidar_(host_ip_)
     , has_gimbal_cmd_(false)
     , tf_listener_(tf_buffer_)
+    , enable_cameras_(false)
 {
     ros_clock_.clock.fromSec(0);
 
@@ -135,6 +136,7 @@ void AirsimNEDWrapper::initialize_ros()
     nh_private_.param("world_frame_id", world_frame_id_, world_frame_id_);
     nh_private_.param("odom_frame_id", odom_frame_id_, odom_frame_id_);
     nh_private_.getParam("update_imu_n_sec", imu_n_sec);
+    nh_private_.getParam("enable_cameras", enable_cameras_);
     vel_cmd_duration_ = 0.05; // todo rosparam
     // todo enforce dynamics constraints in this node as well?
     // nh_.getParam("max_vert_vel_", max_vert_vel_);
@@ -367,7 +369,7 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
     }
 
     // if >0 cameras, add one more thread for img_request_timer_cb
-    if (!airsim_img_request_vehicle_name_pair_vec_.empty()) {
+    if (!airsim_img_request_vehicle_name_pair_vec_.empty() && enable_cameras_) {
         double update_airsim_img_response_every_n_sec;
         nh_private_.getParam("update_airsim_img_response_every_n_sec", update_airsim_img_response_every_n_sec);
 
@@ -376,7 +378,7 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
         //                                 &img_timer_cb_queue_);
 
         // airsim_img_response_timer_ = nh_private_.createTimer(timer_options);
-        // airsim_img_response_timer_ = nh_.createTimer(ros::Duration(update_airsim_img_response_every_n_sec), &AirsimNEDWrapper::img_response_timer_cb, this);
+        airsim_img_response_timer_ = nh_.createTimer(ros::Duration(update_airsim_img_response_every_n_sec), &AirsimNEDWrapper::img_response_timer_cb, this);
         // is_used_img_timer_cb_queue_ = true;
     }
 
