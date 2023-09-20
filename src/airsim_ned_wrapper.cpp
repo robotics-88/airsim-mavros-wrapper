@@ -346,10 +346,11 @@ sensor_msgs::PointCloud2 AirsimNEDWrapper::get_lidar_msg_from_airsim(const msr::
         lidar_msg.height = 1;
         lidar_msg.width = lidar_data.point_cloud.size() / 3;
 
-        lidar_msg.fields.resize(3);
+        lidar_msg.fields.resize(4);
         lidar_msg.fields[0].name = "x"; 
         lidar_msg.fields[1].name = "y"; 
-        lidar_msg.fields[2].name = "z";
+        lidar_msg.fields[2].name = "z"; 
+        lidar_msg.fields[3].name = "intensity";
         int offset = 0;
 
         for (size_t d = 0; d < lidar_msg.fields.size(); ++d, offset += 4)
@@ -362,9 +363,16 @@ sensor_msgs::PointCloud2 AirsimNEDWrapper::get_lidar_msg_from_airsim(const msr::
         lidar_msg.is_bigendian = false;
         lidar_msg.point_step = offset; // 4 * num fields
         lidar_msg.row_step = lidar_msg.point_step * lidar_msg.width;
-
         lidar_msg.is_dense = true; // todo
-        std::vector<float> data_std = lidar_data.point_cloud;
+        std::vector<float> data_std_pre = lidar_data.point_cloud;
+        std::vector<float> data_std;// = lidar_data.point_cloud;
+        for (int ii = 0; ii < data_std_pre.size(); ii++) {
+            data_std.push_back(data_std_pre.at(ii));
+            if (ii % 3 == 2) {
+                float intensity = 0.0; // TODO Could put useful intensity at some point, but for now just a placeholder
+                data_std.push_back(intensity);
+            }
+        }
 
         const unsigned char* bytes = reinterpret_cast<const unsigned char*>(&data_std[0]);
         std::vector<unsigned char> lidar_msg_data(bytes, bytes + sizeof(float) * data_std.size());
