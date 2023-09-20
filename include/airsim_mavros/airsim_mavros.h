@@ -226,7 +226,7 @@ private:
     std::map<std::string, std::string> vehicle_imu_map_;
     std::map<std::string, std::string> vehicle_lidar_map_;
 
-    bool is_vulkan_; // rosparam obtained from launch file. If vulkan is being used, we BGR encoding instead of RGB
+    bool is_vulkan_ = false; // rosparam obtained from launch file. If vulkan is being used, we BGR encoding instead of RGB
 
     std::unique_ptr<msr::airlib::RpcLibClientBase> airsim_client_ = nullptr;
     // seperate busy connections to airsim, update in their own thread
