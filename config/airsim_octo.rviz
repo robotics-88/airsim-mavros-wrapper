@@ -6,8 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Lidar Returns1
         - /TF1/Frames1
-        - /Assigned Map Region1/Status1
       Splitter Ratio: 0.5
     Tree Height: 744
   - Class: rviz/Selection
@@ -96,7 +96,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.009999999776482582
+      Size (m): 0.10000000149011612
       Style: Flat Squares
       Topic: /airsim_ros_node/base_link_frd/lidar/Lidar2
       Unreliable: false
@@ -212,30 +212,6 @@ Visualization Manager:
       Topic: /search_node/trajectory_position
       Unreliable: false
       Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /explore/frontiers
-      Name: Frontiers
-      Namespaces:
-        {}
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /explore/frontier_goal_marker
-      Name: FrontierGoal
-      Namespaces:
-        {}
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /map_region
-      Name: Assigned Map Region
-      Namespaces:
-        {}
-      Queue Size: 100
-      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -264,7 +240,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 36.36749267578125
+      Distance: 68.30122375488281
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -272,17 +248,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: 6.910782814025879
+        Y: -7.481991291046143
+        Z: 2.4517393112182617
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.364797979593277
+      Pitch: 0.29479727149009705
       Target Frame: <Fixed Frame>
-      Yaw: 4.670409202575684
+      Yaw: 4.690391540527344
     Saved: ~
 Window Geometry:
   Displays:

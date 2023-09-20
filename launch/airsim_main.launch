@@ -18,7 +18,6 @@
     <arg name="ardupilot" default="true"/>
     <include file="$(find airsim_launch)/launch/airsim_ardupilot.launch" if="$(arg ardupilot)"/>
     <include file="$(find airsim_launch)/launch/airsim_px4.launch" unless="$(arg ardupilot)"/>
-    <!-- Leaving this rosservice call in, but it doesnt appear to work in AirSim. Inside the node, have to repeatedly call this service to achieve the effect -->
     <node pkg="rosservice" type="rosservice" name="rosservice" args="call --wait /mavros/set_stream_rate 0 100 1"/>
 
     <!-- AirSim publish rates -->
@@ -29,17 +28,8 @@
     <arg name="enable_cameras" default="false"/> <!-- Enabling cameras slows the publish rate of everything to 3Hz so only enable if required -->
 
     <!-- Common control args -->
-    <arg name="min_alt" default="0.2"/>
-    <arg name="max_alt" default="10.0"/>
     <arg name="default_alt" default="2.0"/> <!-- Must be between min/max or path planning fails -->
-    <arg name="default_speed" default="2.0"/> <!-- m/s-->
-    <arg name="goal_topic" default="/mavros/setpoint_position/local"/> <!-- for mavros without OA, use /mavros/setpoint_position/local. default is /goal.-->
-    <!-- <arg name="imu_topic" default="$(arg vehicle_name)/imu/Imu"/> -->
-    <arg name="imu_topic" default="/mavros/imu/data"/>
     <arg name="map_resolution" default="1.0"/> <!-- m-->
-    <arg name="max_dist_to_polygon" default="3000"/>
-
-    <!-- <param name="/use_sim_time" value="true"/> -->
 
     <node pkg="tf" type="static_transform_publisher" name="ned_to_enu_pub" args="0 0 0 1.57 0 3.14 world_ned world 100"/>
     <!-- <node pkg="tf" type="static_transform_publisher" name="ned_to_enu_map_pub" args="0 0 0 1.57 0 3.14 map_ned map 100"/> -->
@@ -56,53 +46,12 @@
         <param name="enable_cameras" value="$(arg enable_cameras)" />
     </node>
 
-    <node pkg="task_manager_88" type="task_manager" name="task_manager" output="screen">
-        <param name="goal_topic" value="$(arg goal_topic)"/>
-    </node>
-
-    <arg name="depth_image" default="$(arg vehicle_name)/front_left_custom/DepthPlanar"/>
-    <arg name="depth_info" default="$(arg vehicle_name)/front_left_custom/DepthPlanar/camera_info"/>
-    <node pkg="depth_image_to_mavlink" type="depth_image_to_mavlink_node" respawn="false" name="depth_image_to_mavlink" output="screen">
-        <param name="depth_image" value="$(arg depth_image)"/>
-        <param name="depth_info" value="$(arg depth_info)"/>
-    </node>
-
-    <!-- <include file="$(find airsim_launch)/launch/airsim_oa.launch">
-        <arg name="min_alt" value="$(arg min_alt)"/>
-        <arg name="max_alt" value="$(arg max_alt)"/>
-        <arg name="imu_topic" value="$(arg imu_topic)"/>
-        <arg name="raw_cloud_topic" value="$(arg raw_lidar_topic)"/>
-        <arg name="reg_cloud_topic" value="$(arg registered_lidar_topic)"/>
-    </include> -->
-
-    <node pkg="path_to_mavros" type="path_to_mavros_node" respawn="false" name="path_to_mavros" output="screen">
-        <param name="default_speed" value="$(arg default_speed)"/>
-    </node>
-
     <include file="$(find octomap_slice)/launch/octomap_full_handling.launch">
         <arg name="cloud_topic" value="$(arg raw_lidar_topic)"/>
         <arg name="octomap_res" value="$(arg map_resolution)"/>
         <arg name="slice_height" value="$(arg default_alt)"/>
         <arg name="rviz" value="false"/>
     </include>
-
-    <include file="$(find explore_uav)/launch/explore.launch">
-        <arg name="cloud_in" value="$(arg raw_lidar_topic)"/>
-        <arg name="robot_base_frame" value="$(arg vehicle_frame)"/>
-        <arg name="default_alt" value="$(arg default_alt)"/>
-        <arg name="goal_topic" value="$(arg goal_topic)"/>
-        <arg name="map_resolution" value="$(arg map_resolution)"/>
-    </include>
-
-    <include file="$(find monarch)/launch/monarch.launch">
-        <arg name="enable_autonomy" value="$(arg enable_autonomy)"/>
-        <arg name="enable_exploration" value="$(arg enable_exploration)"/>
-        <arg name="default_altitude_m" value="$(arg default_alt)"/>
-        <arg name="ardupilot" value="$(arg ardupilot)"/>
-        <arg name="max_dist_to_polygon" value="$(arg max_dist_to_polygon)"/>
-    </include>
-
-    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
 
     <node type="rviz" name="airsim_rviz" pkg="rviz" args="-d $(find airsim_launch)/config/airsim_octo.rviz" output="log"/>
 </launch>
