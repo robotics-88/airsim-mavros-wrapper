@@ -1,5 +1,5 @@
 /* 
-© 2023 Robotics 88
+2023 Robotics 88
 Author: Erin Linebarger <erin@robotics88.com> 
 */
 
@@ -58,16 +58,16 @@ STRICT_MODE_OFF //todo what does this do?
 #include <tf2_ros/transform_listener.h>
 #include <tf2/convert.h>
 
-#include <airsim_ros_wrapper/math_common.h>
+#include <airsim_mavros/math_common.h>
 
 
 namespace airsim_ros {
 /**
- * @class AirsimRosWrapper
+ * @class AirsimMavros
  * @brief A class wrapper for AirSim with a MultiRotor and MAVROS control
  */
 
-class AirsimNEDWrapper
+class AirsimMavros
 {
     using AirSimSettings = msr::airlib::AirSimSettings;
     using SensorBase = msr::airlib::SensorBase;
@@ -86,8 +86,8 @@ public:
         CAR
     };
 
-    AirsimNEDWrapper(const ros::NodeHandle& nh);
-    ~AirsimNEDWrapper(){};
+    AirsimMavros(const ros::NodeHandle& nh);
+    ~AirsimMavros(){};
 
     void initialize_airsim();
     void initialize_ros();

@@ -47,7 +47,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
    INCLUDE_DIRS include
-#  LIBRARIES airsim_ros
+#  LIBRARIES airsim_mavros
    CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
 )
@@ -71,16 +71,16 @@ include_directories(
 
 ## Declare a C++ executable
 add_executable(airsim_node
-  src/airsim_ros_node.cpp
+  src/airsim_mavros_node.cpp
 )
 
-add_library(airsim_ros 
-  src/airsim_ned_wrapper.cpp
+add_library(airsim_mavros 
+  src/airsim_mavros.cpp
 )
-target_link_libraries(airsim_ros ${catkin_LIBRARIES} ${OpenCV_LIBS} yaml-cpp AirLib)
+target_link_libraries(airsim_mavros ${catkin_LIBRARIES} ${OpenCV_LIBS} yaml-cpp AirLib)
 
-add_dependencies(airsim_ros ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(airsim_node airsim_ros ${catkin_LIBRARIES} ${OpenCV_LIBS} AirLib)
+add_dependencies(airsim_mavros ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(airsim_node airsim_mavros ${catkin_LIBRARIES} ${OpenCV_LIBS} AirLib)
 
 
 ## Specify libraries to link a library or executable target against
@@ -100,7 +100,7 @@ install(TARGETS
 
 install(TARGETS 
     #list of shared libraries
-    airsim_ros
+    airsim_mavros
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )

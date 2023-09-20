@@ -1,9 +1,9 @@
 /* 
-© 2023 Robotics 88
+2023 Robotics 88
 Author: Erin Linebarger <erin@robotics88.com> 
 */
 
-#include <airsim_ros_wrapper/airsim_ned_wrapper.h>
+#include <airsim_mavros/airsim_mavros.h>
 #include <boost/make_shared.hpp>
 #include <common/AirSimSettings.hpp>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
@@ -14,7 +14,7 @@ Author: Erin Linebarger <erin@robotics88.com>
 namespace airsim_ros
 {
 
-const std::unordered_map<int, std::string> AirsimNEDWrapper::image_type_int_to_string_map_ = {
+const std::unordered_map<int, std::string> AirsimMavros::image_type_int_to_string_map_ = {
     { 0, "Scene" },
     { 1, "DepthPlanar" },
     { 2, "DepthPerspective" },
@@ -25,7 +25,7 @@ const std::unordered_map<int, std::string> AirsimNEDWrapper::image_type_int_to_s
     { 7, "Infrared" }
 };
 
-AirsimNEDWrapper::AirsimNEDWrapper(const ros::NodeHandle& nh)
+AirsimMavros::AirsimMavros(const ros::NodeHandle& nh)
     : img_async_spinner_(1, &img_timer_cb_queue_) // a thread for image callbacks to be 'spun' by img_async_spinner_
     , lidar_async_spinner_(1, &lidar_timer_cb_queue_) // same as above, but for lidar
     , is_used_lidar_timer_cb_queue_(false)
@@ -57,10 +57,10 @@ AirsimNEDWrapper::AirsimNEDWrapper(const ros::NodeHandle& nh)
     parseAirsimSettings();
     initialize_ros();
 
-    std::cout << "AirsimNEDWrapper Initialized!\n";
+    std::cout << "AirsimMavros Initialized!\n";
 }
 
-bool AirsimNEDWrapper::parseAirsimSettings() {
+bool AirsimMavros::parseAirsimSettings() {
     msr::airlib::RpcLibClientBase airsim_client(host_ip_);
     airsim_client.confirmConnection();
 
@@ -71,7 +71,7 @@ bool AirsimNEDWrapper::parseAirsimSettings() {
     if (text) {
         AirSimSettings::initializeSettings(settings_text_);
 
-        AirSimSettings::singleton().load(std::bind(&AirsimNEDWrapper::getSimMode, this));
+        AirSimSettings::singleton().load(std::bind(&AirsimMavros::getSimMode, this));
         std::cout << "SimMode: " << AirSimSettings::singleton().simmode_name << std::endl;
 
         return true;
@@ -79,12 +79,12 @@ bool AirsimNEDWrapper::parseAirsimSettings() {
     return false;
 }
 
-std::string AirsimNEDWrapper::getSimMode() {
+std::string AirsimMavros::getSimMode() {
     const auto& settings_json = msr::airlib::Settings::loadJSonString(settings_text_);
     return settings_json.getString("SimMode", "");
 }
 
-void AirsimNEDWrapper::initialize_airsim()
+void AirsimMavros::initialize_airsim()
 {
     // todo do not reset if already in air?
     try {
@@ -106,7 +106,7 @@ void AirsimNEDWrapper::initialize_airsim()
     }
 }
 
-void AirsimNEDWrapper::initialize_ros()
+void AirsimMavros::initialize_ros()
 {
     // ros params
     double update_airsim_control_every_n_sec;
@@ -125,11 +125,11 @@ void AirsimNEDWrapper::initialize_ros()
 
     create_ros_pubs_from_settings_json();
     ROS_INFO("Drone control %fms", update_airsim_control_every_n_sec*1000);
-    airsim_control_update_timer_ = nh_.createTimer(ros::Duration(update_airsim_control_every_n_sec), &AirsimNEDWrapper::drone_state_timer_cb, this);
-    airsim_imu_update_timer_ = nh_.createTimer(ros::Duration(imu_n_sec), &AirsimNEDWrapper::drone_imu_timer_cb, this);
+    airsim_control_update_timer_ = nh_.createTimer(ros::Duration(update_airsim_control_every_n_sec), &AirsimMavros::drone_state_timer_cb, this);
+    airsim_imu_update_timer_ = nh_.createTimer(ros::Duration(imu_n_sec), &AirsimMavros::drone_imu_timer_cb, this);
 }
 
-void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
+void AirsimMavros::create_ros_pubs_from_settings_json()
 {
     airsim_img_request_vehicle_name_pair_vec_.clear();
     image_pub_vec_.clear();
@@ -265,11 +265,11 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
 
         // TODO figure out how to get this alternative timer to work
         // ros::TimerOptions timer_options(ros::Duration(update_airsim_img_response_every_n_sec),
-        //                                 boost::bind(&AirsimNEDWrapper::img_response_timer_cb, this, _1),
+        //                                 boost::bind(&AirsimMavros::img_response_timer_cb, this, _1),
         //                                 &img_timer_cb_queue_);
 
         // airsim_img_response_timer_ = nh_private_.createTimer(timer_options);
-        airsim_img_response_timer_ = nh_.createTimer(ros::Duration(update_airsim_img_response_every_n_sec), &AirsimNEDWrapper::img_response_timer_cb, this);
+        airsim_img_response_timer_ = nh_.createTimer(ros::Duration(update_airsim_img_response_every_n_sec), &AirsimMavros::img_response_timer_cb, this);
         // is_used_img_timer_cb_queue_ = true;
     }
 
@@ -281,18 +281,18 @@ void AirsimNEDWrapper::create_ros_pubs_from_settings_json()
         // nh_private_.setCallbackQueue(&lidar_timer_cb_queue_);
 
         // ros::TimerOptions timer_options(ros::Duration(update_lidar_every_n_sec),
-        //                                 boost::bind(&AirsimNEDWrapper::lidar_timer_cb, this, _1),
+        //                                 boost::bind(&AirsimMavros::lidar_timer_cb, this, _1),
         //                                 &lidar_timer_cb_queue_);
 
         // airsim_lidar_update_timer_ = nh_private_.createTimer(timer_options);
-        airsim_lidar_update_timer_ = nh_.createTimer(ros::Duration(update_lidar_every_n_sec), &AirsimNEDWrapper::lidar_timer_cb, this);
+        airsim_lidar_update_timer_ = nh_.createTimer(ros::Duration(update_lidar_every_n_sec), &AirsimMavros::lidar_timer_cb, this);
         // is_used_lidar_timer_cb_queue_ = true;
     }
 
     initialize_airsim();
 }
 
-nav_msgs::Odometry AirsimNEDWrapper::get_odom_msg_from_multirotor_state(const msr::airlib::MultirotorState& drone_state)
+nav_msgs::Odometry AirsimMavros::get_odom_msg_from_multirotor_state(const msr::airlib::MultirotorState& drone_state)
 {
 
     // FLU 
@@ -323,7 +323,7 @@ nav_msgs::Odometry AirsimNEDWrapper::get_odom_msg_from_multirotor_state(const ms
     return odom_flu_msg;
 }
 
-geometry_msgs::QuaternionStamped AirsimNEDWrapper::get_attitude_from_airsim_state(const msr::airlib::MultirotorState& drone_state)
+geometry_msgs::QuaternionStamped AirsimMavros::get_attitude_from_airsim_state(const msr::airlib::MultirotorState& drone_state)
 {
     geometry_msgs::QuaternionStamped attitude;
     attitude.quaternion.x = drone_state.getOrientation().x();
@@ -337,7 +337,7 @@ geometry_msgs::QuaternionStamped AirsimNEDWrapper::get_attitude_from_airsim_stat
 // https://docs.ros.org/jade/api/sensor_msgs/html/point__cloud__conversion_8h_source.html#l00066
 // look at UnrealLidarSensor.cpp UnrealLidarSensor::getPointCloud() for math
 // read this carefully https://docs.ros.org/kinetic/api/sensor_msgs/html/msg/PointCloud2.html
-sensor_msgs::PointCloud2 AirsimNEDWrapper::get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data) const
+sensor_msgs::PointCloud2 AirsimMavros::get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data) const
 {
     sensor_msgs::PointCloud2 lidar_msg;
 
@@ -385,7 +385,7 @@ sensor_msgs::PointCloud2 AirsimNEDWrapper::get_lidar_msg_from_airsim(const msr::
     return lidar_msg;
 }
 
-sensor_msgs::NavSatFix AirsimNEDWrapper::get_gps_sensor_msg_from_airsim_geo_point(const msr::airlib::GeoPoint& geo_point) const
+sensor_msgs::NavSatFix AirsimMavros::get_gps_sensor_msg_from_airsim_geo_point(const msr::airlib::GeoPoint& geo_point) const
 {
     sensor_msgs::NavSatFix gps_msg;
     gps_msg.latitude = geo_point.latitude;
@@ -394,7 +394,7 @@ sensor_msgs::NavSatFix AirsimNEDWrapper::get_gps_sensor_msg_from_airsim_geo_poin
     return gps_msg;
 }
 
-ros::Time AirsimNEDWrapper::chrono_timestamp_to_ros(const std::chrono::system_clock::time_point& stamp) const
+ros::Time AirsimMavros::chrono_timestamp_to_ros(const std::chrono::system_clock::time_point& stamp) const
 {
     auto dur = std::chrono::duration<double>(stamp.time_since_epoch());
     ros::Time cur_time;
@@ -402,7 +402,7 @@ ros::Time AirsimNEDWrapper::chrono_timestamp_to_ros(const std::chrono::system_cl
     return cur_time;
 }
 
-ros::Time AirsimNEDWrapper::airsim_timestamp_to_ros(const msr::airlib::TTimePoint& stamp) const
+ros::Time AirsimMavros::airsim_timestamp_to_ros(const msr::airlib::TTimePoint& stamp) const
 {
     // airsim appears to use chrono::system_clock with nanosecond precision
     std::chrono::nanoseconds dur(stamp);
@@ -411,17 +411,17 @@ ros::Time AirsimNEDWrapper::airsim_timestamp_to_ros(const msr::airlib::TTimePoin
     return cur_time;
 }
 
-msr::airlib::MultirotorRpcLibClient* AirsimNEDWrapper::get_multirotor_client()
+msr::airlib::MultirotorRpcLibClient* AirsimMavros::get_multirotor_client()
 {
     return static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get());
 }
 
-// msr::airlib::CarRpcLibClient* AirsimNEDWrapper::get_car_client()
+// msr::airlib::CarRpcLibClient* AirsimMavros::get_car_client()
 // {
 //     return static_cast<msr::airlib::CarRpcLibClient*>(airsim_client_.get());
 // }
 
-ros::Time AirsimNEDWrapper::make_ts(uint64_t unreal_ts) {
+ros::Time AirsimMavros::make_ts(uint64_t unreal_ts) {
     if (first_imu_unreal_ts < 0) {
         first_imu_unreal_ts = unreal_ts;
         first_imu_ros_ts = ros::Time::now();
@@ -429,7 +429,7 @@ ros::Time AirsimNEDWrapper::make_ts(uint64_t unreal_ts) {
     return  first_imu_ros_ts + ros::Duration( (unreal_ts- first_imu_unreal_ts)/1e9);
 }
 
-sensor_msgs::Imu AirsimNEDWrapper::get_imu_msg_from_airsim(const msr::airlib::ImuBase::Output& imu_data)
+sensor_msgs::Imu AirsimMavros::get_imu_msg_from_airsim(const msr::airlib::ImuBase::Output& imu_data)
 {
     sensor_msgs::Imu imu_msg;
     imu_msg.header.frame_id = vehicle_frame_id_;// todo multiple drones
@@ -450,16 +450,9 @@ sensor_msgs::Imu AirsimNEDWrapper::get_imu_msg_from_airsim(const msr::airlib::Im
     return imu_msg;
 }
 
-void AirsimNEDWrapper::drone_imu_timer_cb(const ros::TimerEvent& event)
+void AirsimMavros::drone_imu_timer_cb(const ros::TimerEvent& event)
 {
-    // TODO: leave as is for now, IMU timer cb does nothing. Waiting to see what IMU requirements based on a better SLAM algorithm. Use /mavros/imu/data (default hz for AP is 3 Hz, low but so far fine without SLAM)
-
-    // Uncomment this section if require high Hz on /mavros/imu/data (may lower the quality of IMU data based on small number of tests)
-    // mavros_msgs::StreamRate stream_rate_msg;
-    // stream_rate_msg.request.message_rate = 100;
-    // stream_rate_msg.request.on_off = 1; // on
-    // stream_rate_msg.request.stream_id = 0;
-    // mavros_client_.call(stream_rate_msg);
+    // TODO: leave as is for now, IMU timer cb does nothing. Waiting to see what IMU requirements based on a better SLAM algorithm. Use /mavros/imu/data instead for IMU. TBD if remove this method and timer.
 
     // Uncomment below if require the airsim_ros_node Imu topic, but experience suggests it is very inaccurate and MAVROS IMU should be preferred
 
@@ -492,7 +485,7 @@ void AirsimNEDWrapper::drone_imu_timer_cb(const ros::TimerEvent& event)
 }
 
 
-void AirsimNEDWrapper::drone_state_timer_cb(const ros::TimerEvent& event)
+void AirsimMavros::drone_state_timer_cb(const ros::TimerEvent& event)
 {
     try
     {
@@ -541,7 +534,7 @@ void AirsimNEDWrapper::drone_state_timer_cb(const ros::TimerEvent& event)
     }
 }
 
-void AirsimNEDWrapper::update_and_publish_static_transforms(VehicleROS* vehicle_ros)
+void AirsimMavros::update_and_publish_static_transforms(VehicleROS* vehicle_ros)
 {
     // TODO updating static makes no sense other than to check for newly added static tf, which would also be very uncommon midrun. make part of instantiation but not regular loop.
     if (vehicle_ros && !vehicle_ros->static_tf_msg_vec.empty()) {
@@ -552,7 +545,7 @@ void AirsimNEDWrapper::update_and_publish_static_transforms(VehicleROS* vehicle_
     }
 }
 
-void AirsimNEDWrapper::publish_odom_tf(const nav_msgs::Odometry& odom_ned_msg)
+void AirsimMavros::publish_odom_tf(const nav_msgs::Odometry& odom_ned_msg)
 {
     geometry_msgs::TransformStamped odom_tf;
     odom_tf.header.frame_id = odom_frame_id_;
@@ -569,7 +562,7 @@ void AirsimNEDWrapper::publish_odom_tf(const nav_msgs::Odometry& odom_ned_msg)
 }
 
 // airsim uses nans for zeros in settings.json. we set them to zeros here for handling tfs in ROS
-void AirsimNEDWrapper::set_nans_to_zeros_in_pose(VehicleSetting& vehicle_setting) const
+void AirsimMavros::set_nans_to_zeros_in_pose(VehicleSetting& vehicle_setting) const
 {
     if (std::isnan(vehicle_setting.position.x()))
         vehicle_setting.position.x() = 0.0;
@@ -591,7 +584,7 @@ void AirsimNEDWrapper::set_nans_to_zeros_in_pose(VehicleSetting& vehicle_setting
 }
 
 // if any nan's in camera pose, set them to match vehicle pose (which has already converted any potential nans to zeros)
-void AirsimNEDWrapper::set_nans_to_zeros_in_pose(const VehicleSetting& vehicle_setting, CameraSetting& camera_setting) const
+void AirsimMavros::set_nans_to_zeros_in_pose(const VehicleSetting& vehicle_setting, CameraSetting& camera_setting) const
 {
     if (std::isnan(camera_setting.position.x()))
         camera_setting.position.x() = vehicle_setting.position.x();
@@ -612,7 +605,7 @@ void AirsimNEDWrapper::set_nans_to_zeros_in_pose(const VehicleSetting& vehicle_s
         camera_setting.rotation.roll = vehicle_setting.rotation.roll;
 }
 
-void AirsimNEDWrapper::append_static_lidar_tf(VehicleROS* vehicle_ros, const std::string& lidar_name, const msr::airlib::LidarSimpleParams& lidar_setting)
+void AirsimMavros::append_static_lidar_tf(VehicleROS* vehicle_ros, const std::string& lidar_name, const msr::airlib::LidarSimpleParams& lidar_setting)
 {
     geometry_msgs::TransformStamped lidar_tf_msg;
     lidar_tf_msg.header.frame_id = vehicle_frame_id_;
@@ -645,7 +638,7 @@ void AirsimNEDWrapper::append_static_lidar_tf(VehicleROS* vehicle_ros, const std
     vehicle_ros->static_tf_msg_vec.emplace_back(lidar_tf_msg);
 }
 
-void AirsimNEDWrapper::append_static_camera_tf(VehicleROS* vehicle_ros, const std::string& camera_name, const CameraSetting& camera_setting)
+void AirsimMavros::append_static_camera_tf(VehicleROS* vehicle_ros, const std::string& camera_name, const CameraSetting& camera_setting)
 {
     geometry_msgs::TransformStamped static_cam_tf_body_msg;
     static_cam_tf_body_msg.header.frame_id = vehicle_frame_id_;
@@ -684,7 +677,7 @@ void AirsimNEDWrapper::append_static_camera_tf(VehicleROS* vehicle_ros, const st
     vehicle_ros->static_tf_msg_vec.emplace_back(static_cam_tf_optical_msg);
 }
 
-void AirsimNEDWrapper::img_response_timer_cb(const ros::TimerEvent& event)
+void AirsimMavros::img_response_timer_cb(const ros::TimerEvent& event)
 {
     try {
         int image_response_idx = 0;
@@ -699,7 +692,7 @@ void AirsimNEDWrapper::img_response_timer_cb(const ros::TimerEvent& event)
     }
 }
 
-void AirsimNEDWrapper::lidar_timer_cb(const ros::TimerEvent& event)
+void AirsimMavros::lidar_timer_cb(const ros::TimerEvent& event)
 {
     try
     {
@@ -731,7 +724,7 @@ void AirsimNEDWrapper::lidar_timer_cb(const ros::TimerEvent& event)
     }
 }
 
-cv::Mat AirsimNEDWrapper::manual_decode_depth(const ImageResponse& img_response) const
+cv::Mat AirsimMavros::manual_decode_depth(const ImageResponse& img_response) const
 {
     cv::Mat mat(img_response.height, img_response.width, CV_32FC1, cv::Scalar(0));
     int img_width = img_response.width;
@@ -742,7 +735,7 @@ cv::Mat AirsimNEDWrapper::manual_decode_depth(const ImageResponse& img_response)
     return mat;
 }
 
-sensor_msgs::ImagePtr AirsimNEDWrapper::get_img_msg_from_response(const ImageResponse& img_response,
+sensor_msgs::ImagePtr AirsimMavros::get_img_msg_from_response(const ImageResponse& img_response,
                                                                   const ros::Time curr_ros_time,
                                                                   const std::string frame_id)
 {
@@ -760,7 +753,7 @@ sensor_msgs::ImagePtr AirsimNEDWrapper::get_img_msg_from_response(const ImageRes
     return img_msg_ptr;
 }
 
-sensor_msgs::ImagePtr AirsimNEDWrapper::get_depth_img_msg_from_response(const ImageResponse& img_response,
+sensor_msgs::ImagePtr AirsimMavros::get_depth_img_msg_from_response(const ImageResponse& img_response,
                                                                         const ros::Time curr_ros_time,
                                                                         const std::string frame_id)
 {
@@ -774,7 +767,7 @@ sensor_msgs::ImagePtr AirsimNEDWrapper::get_depth_img_msg_from_response(const Im
 }
 
 // todo have a special stereo pair mode and get projection matrix by calculating offset wrt drone body frame?
-sensor_msgs::CameraInfo AirsimNEDWrapper::generate_cam_info(const std::string& camera_name,
+sensor_msgs::CameraInfo AirsimMavros::generate_cam_info(const std::string& camera_name,
                                                             const CameraSetting& camera_setting,
                                                             const CaptureSetting& capture_setting) const
 {
@@ -790,7 +783,7 @@ sensor_msgs::CameraInfo AirsimNEDWrapper::generate_cam_info(const std::string& c
     return cam_info_msg;
 }
 
-void AirsimNEDWrapper::process_and_publish_img_response(const std::vector<ImageResponse>& img_response_vec, const int img_response_idx, const std::string& vehicle_name)
+void AirsimMavros::process_and_publish_img_response(const std::vector<ImageResponse>& img_response_vec, const int img_response_idx, const std::string& vehicle_name)
 {
     int img_response_idx_internal = img_response_idx;
 
