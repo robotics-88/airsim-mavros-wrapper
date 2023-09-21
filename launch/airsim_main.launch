@@ -46,6 +46,11 @@
         <param name="enable_cameras" value="$(arg enable_cameras)" />
     </node>
 
+    <include file="$(find range_data_to_mavros)/launch/range_data_to_mavros.launch">
+        <arg name="point_cloud_topic" value="$(arg raw_lidar_topic)"/>
+        <arg name="data_type" value="point_cloud"/>
+    </include>
+
     <include file="$(find octomap_slice)/launch/octomap_full_handling.launch">
         <arg name="cloud_topic" value="$(arg raw_lidar_topic)"/>
         <arg name="octomap_res" value="$(arg map_resolution)"/>
