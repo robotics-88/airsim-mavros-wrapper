@@ -4,7 +4,7 @@
     <arg name="enable_exploration" default="true"/>
 
     <!-- Frame IDs -->
-    <arg name="vehicle_name" default="/airsim_ros_node/base_link_frd"/>
+    <arg name="vehicle_name" default="/airsim_ros_node/MyVehicle"/>
     <arg name="vehicle_frame" default="base_link"/>
     <arg name="odom_frame" default="odom"/>
     <arg name="map_frame" default="map"/>
@@ -31,6 +31,12 @@
     <arg name="default_alt" default="2.0"/> <!-- Must be between min/max or path planning fails -->
     <arg name="map_resolution" default="1.0"/> <!-- m-->
 
+     <!-- SLAM & path-planning args -->
+    <arg name="min_alt" default="0.2"/>
+    <arg name="max_alt" default="10.0"/>
+    <!-- <arg name="imu_topic" default="$(arg vehicle_name)/imu/Imu"/> -->
+    <arg name="imu_topic" default="/mavros/imu/data"/>
+
     <node pkg="tf" type="static_transform_publisher" name="ned_to_enu_pub" args="0 0 0 1.57 0 3.14 world_ned world 100"/>
     <!-- <node pkg="tf" type="static_transform_publisher" name="ned_to_enu_map_pub" args="0 0 0 1.57 0 3.14 map_ned map 100"/> -->
 
@@ -50,6 +56,18 @@
         <arg name="point_cloud_topic" value="$(arg raw_lidar_topic)"/>
         <arg name="data_type" value="point_cloud"/>
     </include>
+
+    <include file="$(find airsim_launch)/launch/airsim_oa.launch">
+        <arg name="min_alt" value="$(arg min_alt)"/>
+        <arg name="max_alt" value="$(arg max_alt)"/>
+        <arg name="imu_topic" value="$(arg imu_topic)"/>
+        <arg name="raw_cloud_topic" value="/rs_output_points"/>
+        <arg name="reg_cloud_topic" value="$(arg registered_lidar_topic)"/>
+    </include>
+    <node pkg="rs_to_velodyne" type="rs_to_velodyne" name="rs_to_velodyne" args="XYZI XYZIR">
+        <remap from="rslidar_points" to="$(arg raw_lidar_topic)"/>
+        <remap from="velodyne_points" to="rs_output_points"/>
+    </node>
 
     <include file="$(find octomap_slice)/launch/octomap_full_handling.launch">
         <arg name="cloud_topic" value="$(arg raw_lidar_topic)"/>
