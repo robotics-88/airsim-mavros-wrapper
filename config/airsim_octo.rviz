@@ -6,7 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /Lidar Returns1
+        - /SLAM cloud1
+        - /SLAM cloud1/Status1
         - /TF1/Frames1
       Splitter Ratio: 0.5
     Tree Height: 744
@@ -98,7 +99,35 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.10000000149011612
       Style: Flat Squares
-      Topic: /airsim_ros_node/base_link_frd/lidar/Lidar2
+      Topic: /airsim_ros_node/MyVehicle/lidar/Lidar2
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 6.387287139892578
+        Min Value: -0.29980793595314026
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: AxisColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: SLAM cloud
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.10000000149011612
+      Style: Flat Squares
+      Topic: /kd_pointcloud_accumulated
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -118,6 +147,8 @@ Visualization Manager:
           Value: true
         base_link_frd:
           Value: false
+        base_link_frd_stabilized:
+          Value: true
         front_center_custom_body:
           Value: false
         front_center_custom_optical:
@@ -138,6 +169,8 @@ Visualization Manager:
           Value: false
         odom_ned:
           Value: false
+        velodyne:
+          Value: true
         world:
           Value: false
         world_ned:
@@ -152,9 +185,11 @@ Visualization Manager:
         map:
           base_link:
             base_link/Lidar2:
-              {}
+              velodyne:
+                {}
             base_link_frd:
-              {}
+              base_link_frd_stabilized:
+                {}
             front_center_custom_body:
               front_center_custom_optical:
                 {}
@@ -248,17 +283,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 6.910782814025879
-        Y: -7.481991291046143
-        Z: 2.4517393112182617
+        X: 5.862938404083252
+        Y: -1.526896357536316
+        Z: 1.813934564590454
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.29479727149009705
+      Pitch: 0.5447971820831299
       Target Frame: <Fixed Frame>
-      Yaw: 4.690391540527344
+      Yaw: 3.325385093688965
     Saved: ~
 Window Geometry:
   Displays:
