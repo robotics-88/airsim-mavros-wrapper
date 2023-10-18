@@ -34,6 +34,10 @@ Start Unreal, then the flight control (ArduCopter or PX4), then press Play in Un
 
 ![](images/unreal-start.png)
 
+The new default settings will start SLAM and no octomap. In that case, Unreal and Rviz should look like this.
+
+![](images/new-default.png)
+
 ### flight controller
 
 To launch ArduPilot, follow SITL setup [instructions](https://ardupilot.org/dev/docs/setting-up-sitl-on-linux.html), then:
@@ -60,7 +64,7 @@ Don't start this too quickly after starting the flight controller and Unreal. MA
 
 To use PX4, add the arg `ardupilot:=false`. 
 
-The camera ROS publishers are disabled by default as it slows the publishing rate for everything to ~3Hz. To run with camera publishers on, add the arg `enable_cameras:=true`. When running with cameras enabled, Rviz looks like this.
+The camera ROS publishers are disabled by default as it slows the publishing rate for everything to ~3Hz. To run with camera publishers on, add the arg `enable_cameras:=true`. When running with cameras enabled and do_octomap set to true, Rviz looks like this.
 
 ![](images/airsim-start-ros.png)
 
