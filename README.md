@@ -86,7 +86,7 @@ Then you can use any of the following commands.
     * Flies up 5m
 * message SET_POSITION_TARGET_LOCAL_NED 0 0 0 9 2503 0 0 0 0 0 0 0 0 0 1.5707963 0
     * Rotates 90 deg to right
-* message SET_POSITION_TARGET_OFFSET_NED 0 0 0 9 3527 0 0 0 2 0 0 0 0 0 0 0
+* message SET_POSITION_TARGET_LOCAL_NED 0 0 0 9 3527 0 0 0 2 0 0 0 0 0 0 0
     * Forward velocity at 2 m/s for 3 seconds (built-in velocity command stops after 3 sec)
 
 
