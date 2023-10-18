@@ -9,7 +9,7 @@
     "Altitude": 583
   },
   "Vehicles": {
-    "base_link_frd": {
+    "MyVehicle": {
       "VehicleType": "ArduCopter",
       "UseSerial": false,
       "LocalHostIp": "127.0.0.1",

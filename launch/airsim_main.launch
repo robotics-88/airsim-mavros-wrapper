@@ -3,8 +3,12 @@
     <arg name="enable_autonomy" default="true"/>
     <arg name="enable_exploration" default="true"/>
 
+    <!-- Which nodes -->
+    <arg name="do_slam" default="true"/>
+    <arg name="do_octomap" default="false"/>
+
     <!-- Frame IDs -->
-    <arg name="vehicle_name" default="/airsim_ros_node/base_link_frd"/>
+    <arg name="vehicle_name" default="/airsim_ros_node/MyVehicle"/>
     <arg name="vehicle_frame" default="base_link"/>
     <arg name="odom_frame" default="odom"/>
     <arg name="map_frame" default="map"/>
@@ -16,7 +20,9 @@
 
     <!-- Autopilot selection (TBD setting up PX4) -->
     <arg name="ardupilot" default="true"/>
-    <include file="$(find airsim_launch)/launch/airsim_ardupilot.launch" if="$(arg ardupilot)"/>
+    <include file="$(find airsim_launch)/launch/airsim_ardupilot.launch" if="$(arg ardupilot)">
+        <arg name="config_file" value="$(find airsim_launch)/config/apm_slam_config.yaml" if="$(arg do_slam)"/>
+    </include>
     <include file="$(find airsim_launch)/launch/airsim_px4.launch" unless="$(arg ardupilot)"/>
     <node pkg="rosservice" type="rosservice" name="rosservice" args="call --wait /mavros/set_stream_rate 0 100 1"/>
 
@@ -28,7 +34,10 @@
     <arg name="enable_cameras" default="false"/> <!-- Enabling cameras slows the publish rate of everything to 3Hz so only enable if required -->
 
     <!-- Common control args -->
+    <arg name="min_alt" default="0.2"/>
+    <arg name="max_alt" default="10.0"/>
     <arg name="default_alt" default="2.0"/> <!-- Must be between min/max or path planning fails -->
+    <arg name="imu_topic" default="/mavros/imu/data"/>
     <arg name="map_resolution" default="1.0"/> <!-- m-->
 
     <node pkg="tf" type="static_transform_publisher" name="ned_to_enu_pub" args="0 0 0 1.57 0 3.14 world_ned world 100"/>
@@ -51,12 +60,26 @@
         <arg name="data_type" value="point_cloud"/>
     </include>
 
-    <include file="$(find octomap_slice)/launch/octomap_full_handling.launch">
+    <include file="$(find octomap_slice)/launch/octomap_full_handling.launch" if="$(arg do_octomap)">
         <arg name="cloud_topic" value="$(arg raw_lidar_topic)"/>
         <arg name="octomap_res" value="$(arg map_resolution)"/>
         <arg name="slice_height" value="$(arg default_alt)"/>
         <arg name="rviz" value="false"/>
     </include>
+
+    <group if="$(arg do_slam)">
+        <include file="$(find airsim_launch)/launch/airsim_oa.launch">
+            <arg name="min_alt" value="$(arg min_alt)"/>
+            <arg name="max_alt" value="$(arg max_alt)"/>
+            <arg name="imu_topic" value="$(arg imu_topic)"/>
+            <arg name="raw_cloud_topic" value="/velodyne_points"/>
+            <arg name="reg_cloud_topic" value="$(arg registered_lidar_topic)"/>
+        </include>
+        <node pkg="rs_to_velodyne" type="rs_to_velodyne" name="rs_to_velodyne" args="XYZI XYZIR">
+            <remap from="rslidar_points" to="$(arg raw_lidar_topic)"/>
+        </node>
+        <node pkg="tf" type="static_transform_publisher" name="velodyne_pub" args="0 0 0 0 0 0 base_link/Lidar2 velodyne 100"/>
+    </group>
 
     <node type="rviz" name="airsim_rviz" pkg="rviz" args="-d $(find airsim_launch)/config/airsim_octo.rviz" output="log"/>
 </launch>
