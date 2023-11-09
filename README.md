@@ -6,7 +6,7 @@ This is an alternative AirSim/Unreal wrapper based off the [Microsoft version](h
 
 This wrapper requires Unreal and AirSim to be installed first, and has been tested on Ubuntu 20.04 with ROS Noetic. AirSim provides good [instructions](https://microsoft.github.io/AirSim/build_linux/) for setting up both Unreal and AirSim on Linux.
 
-## Setup
+## Setup and build
 
 Create a workspace, clone the required repos, and build:
 ```
@@ -17,14 +17,16 @@ git clone https://github.com/robotics88official/octomap-slice.git
 git clone https://github.com/robotics88official/range-data-to-mavros.git
 git clone https://github.com/robotics88official/dyn_small_obs_avoidance.git
 git clone https://github.com/fyandun/rs_to_velodyne.git
-cd ..
-rosdep install --from-paths src --ignore-src -r -y
-catkin build
+cd airsim-mavros-wrapper
+. ./build.sh
+cd ../..
+source devel/setup.bash --extend
+echo "source $PWD/devel/setup.bash --extend" >> $HOME/.bashrc
 ```
 
 Then copy the AirSim settings file corresponding to the desired flight controller into Documents:
 
-`cp src/airsim-mavros-wrapper/config/<fc_type>_settings.json ~/Documents/AirSim/settings.json`
+`cp src/airsim-mavros-wrapper/config/<fc_type>_settings.json $HOME/Documents/AirSim/settings.json`
 
 This will be the default settings launched in Unreal.
 

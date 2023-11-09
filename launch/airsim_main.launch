@@ -24,7 +24,7 @@
         <arg name="config_file" value="$(find airsim_launch)/config/apm_slam_config.yaml" if="$(arg do_slam)"/>
     </include>
     <include file="$(find airsim_launch)/launch/airsim_px4.launch" unless="$(arg ardupilot)"/>
-    <node pkg="rosservice" type="rosservice" name="rosservice" args="call --wait /mavros/set_stream_rate 0 100 1"/>
+    <node pkg="rosservice" type="rosservice" name="rosservice" args="call --wait /mavros/set_stream_rate 0 50 1"/>
 
     <!-- AirSim publish rates -->
     <arg name="image_pub_freq" default=".05"/>

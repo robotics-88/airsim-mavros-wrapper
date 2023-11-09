@@ -2,15 +2,15 @@ cmake_minimum_required(VERSION 3.0.2)
 project(airsim_launch)
 
 # set this to path to AirSim root folder if you want your catkin workspace in a custom directory
-set(AIRSIM_ROOT $ENV{HOME}/src/AirSim/)
+set(AIRSIM_DIR $ENV{AIRSIM_DIR})
 
-add_subdirectory("${AIRSIM_ROOT}/cmake/rpclib_wrapper" rpclib_wrapper)
-add_subdirectory("${AIRSIM_ROOT}/cmake/AirLib" AirLib)
-add_subdirectory("${AIRSIM_ROOT}/cmake/MavLinkCom" MavLinkCom)
+add_subdirectory("${AIRSIM_DIR}/cmake/rpclib_wrapper" rpclib_wrapper)
+add_subdirectory("${AIRSIM_DIR}/cmake/AirLib" AirLib)
+add_subdirectory("${AIRSIM_DIR}/cmake/MavLinkCom" MavLinkCom)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(RPC_LIB_INCLUDES " ${AIRSIM_ROOT}/external/rpclib/rpclib-2.3.0/include")
+set(RPC_LIB_INCLUDES " ${AIRSIM_DIR}/external/rpclib/rpclib-2.3.0/include")
 set(RPC_LIB rpc) # name of .a file with lib prefix
 message(STATUS "found RPC_LIB_INCLUDES=${RPC_LIB_INCLUDES}")
 
@@ -61,11 +61,11 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ${AIRSIM_ROOT}/AirLib/deps/eigen3
-  ${AIRSIM_ROOT}/AirLib/include
+  ${AIRSIM_DIR}/AirLib/deps/eigen3
+  ${AIRSIM_DIR}/AirLib/include
   ${RPC_LIB_INCLUDES}
-  ${AIRSIM_ROOT}/MavLinkCom/include
-  ${AIRSIM_ROOT}/MavLinkCom/common_utils
+  ${AIRSIM_DIR}/MavLinkCom/include
+  ${AIRSIM_DIR}/MavLinkCom/common_utils
   ${OpenCV_INCLUDE_DIRS}
 )
 
