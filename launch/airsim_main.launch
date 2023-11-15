@@ -1,7 +1,4 @@
 <launch>
-     <!-- Safe guards -->
-    <arg name="enable_autonomy" default="true"/>
-    <arg name="enable_exploration" default="true"/>
 
     <!-- Which nodes -->
     <arg name="do_slam" default="true"/>
