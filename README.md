@@ -70,6 +70,8 @@ The camera ROS publishers are disabled by default as it slows the publishing rat
 
 ![](images/airsim-start-ros.png)
 
+If you want to enable octomap, include the arg do_octomap:=true
+
 ### manual flight
 
 To test how the map looks as the vehicle moves around, you can fly the ArduPilot drone with terminal commands. In the ArduPilot terminal, run:
