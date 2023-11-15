@@ -15,8 +15,8 @@ cd airsim_ros/src
 git clone https://github.com/robotics88official/airsim-mavros-wrapper.git
 git clone https://github.com/robotics88official/octomap-slice.git
 git clone https://github.com/robotics88official/range-data-to-mavros.git
-git clone https://github.com/robotics88official/dyn_small_obs_avoidance.git
-git clone https://github.com/fyandun/rs_to_velodyne.git
+git clone https://github.com/robotics88official/slam.git
+git clone https://github.com/robotics88official/rs_to_velodyne.git
 cd airsim-mavros-wrapper
 . ./build.sh
 cd ../..
