@@ -789,9 +789,9 @@ void AirsimMavros::process_and_publish_img_response(const std::vector<ImageRespo
 
     for (const auto& curr_img_response : img_response_vec) {
         // update timestamp of saved cam info msgs
-        ros::Time curr_ros_time = airsim_timestamp_to_ros(curr_img_response.time_stamp);
+        ros::Time curr_ros_time = ros::Time::now();
 
-        camera_info_msg_vec_[img_response_idx_internal].header.stamp = curr_ros_time;// airsim_timestamp_to_ros(curr_img_response.time_stamp);
+        camera_info_msg_vec_[img_response_idx_internal].header.stamp = curr_ros_time;
         cam_info_pub_vec_[img_response_idx_internal].publish(camera_info_msg_vec_[img_response_idx_internal]);
 
         // DepthPlanar / DepthPerspective / DepthVis / DisparityNormalized
