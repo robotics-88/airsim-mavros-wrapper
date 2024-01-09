@@ -456,32 +456,32 @@ void AirsimMavros::drone_imu_timer_cb(const ros::TimerEvent& event)
 
     // Uncomment below if require the airsim_ros_node Imu topic, but experience suggests it is very inaccurate and MAVROS IMU should be preferred
 
-    // try
-    // {
-    //     if (imu_pub_vec_.size() > 0)
-    //     {
-    //         int ctr = 0;
-    //         for (const auto& vehicle_imu_pair: vehicle_imu_map_)
-    //         {
-    //             std::unique_lock<std::recursive_mutex> lck(drone_control_mutex_);
-    //             ros::Time curr_ros_time = ros::Time::now();
-    //             auto imu_data = get_multirotor_client()->getImuData(vehicle_imu_pair.second, vehicle_imu_pair.first);
-    //             lck.unlock();
-    //             sensor_msgs::Imu imu_msg = get_imu_msg_from_airsim(imu_data);
-    //             imu_msg.header.stamp = curr_ros_time;
-    //             // imu_msg.header.frame_id = vehicle_imu_pair.first;
-    //             imu_pub_vec_[ctr].publish(imu_msg);
-    //             ctr++;
-    //         } 
-    //     }
-    // }
+    try
+    {
+        if (imu_pub_vec_.size() > 0)
+        {
+            int ctr = 0;
+            for (const auto& vehicle_imu_pair: vehicle_imu_map_)
+            {
+                std::unique_lock<std::recursive_mutex> lck(drone_control_mutex_);
+                ros::Time curr_ros_time = ros::Time::now();
+                auto imu_data = get_multirotor_client()->getImuData(vehicle_imu_pair.second, vehicle_imu_pair.first);
+                lck.unlock();
+                sensor_msgs::Imu imu_msg = get_imu_msg_from_airsim(imu_data);
+                imu_msg.header.stamp = curr_ros_time;
+                // imu_msg.header.frame_id = vehicle_imu_pair.first;
+                imu_pub_vec_[ctr].publish(imu_msg);
+                ctr++;
+            } 
+        }
+    }
 
-    // catch (rpc::rpc_error& e)
-    // {
-    //     std::cout << "error" << std::endl;
-    //     std::string msg = e.get_error().as<std::string>();
-    //     std::cout << "Exception raised by the API:" << std::endl << msg << std::endl;
-    // }
+    catch (rpc::rpc_error& e)
+    {
+        std::cout << "error" << std::endl;
+        std::string msg = e.get_error().as<std::string>();
+        std::cout << "Exception raised by the API:" << std::endl << msg << std::endl;
+    }
 }
 
 
