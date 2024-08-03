@@ -70,11 +70,11 @@ ament_target_dependencies(airsim_mavros
   rclcpp
   sensor_msgs
   geometry_msgs
+  mavros_msgs
   nav_msgs
   image_transport
   tf2_ros
   cv_bridge
-  airsim_interfaces
 )
 target_link_libraries(airsim_node airsim_mavros ${catkin_LIBRARIES} ${OpenCV_LIBS} AirLib)
 
@@ -111,7 +111,7 @@ install(FILES
   README.md
   DESTINATION share/${PROJECT_NAME}
 )
-install(DIRECTORY launch rviz DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
 
 

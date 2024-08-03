@@ -28,8 +28,6 @@
   <build_depend>geographic_msgs</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>tf2_sensor_msgs</build_depend>
-  
-  <depend>airsim_interfaces</depend>
 
   <build_depend>builtin_interfaces</build_depend>
   <exec_depend>builtin_interfaces</exec_depend>
@@ -42,8 +40,6 @@
   <exec_depend>rclpy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>std_msgs</exec_depend>
-  
-  <build_depend>tf2_sensor_msgs</build_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
