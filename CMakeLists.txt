@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.5)
 project(airsim_launch)
 
 # set this to path to AirSim root folder if you want your catkin workspace in a custom directory
@@ -16,58 +16,44 @@ message(STATUS "found RPC_LIB_INCLUDES=${RPC_LIB_INCLUDES}")
 
 find_package(OpenCV REQUIRED)
 
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+
 ## Find catkin macros and libraries
-find_package(catkin REQUIRED COMPONENTS
-  cv_bridge
-  image_transport
-  mavros_msgs
-  nav_msgs
-  octomap_rviz_plugins
-  rosbridge_server
-  roscpp
-  roslib
-  std_msgs
-  tf2
-  tf2_geometry_msgs
-  tf2_ros
-  tf2_sensor_msgs
-)
-
-## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
-
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if your package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-   INCLUDE_DIRS include
-#  LIBRARIES airsim_mavros
-   CATKIN_DEPENDS roscpp std_msgs
-#  DEPENDS system_lib
-)
+find_package(rclcpp REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(geographic_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_sensor_msgs REQUIRED)
+find_package(rclpy REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(mavros_msgs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(rosidl_typesupport_cpp REQUIRED)
+find_package(rosidl_default_runtime REQUIRED)
+find_package(airsim_interfaces REQUIRED)
 
 ###########
 ## Build ##
 ###########
 
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-  ${AIRSIM_DIR}/AirLib/deps/eigen3
-  ${AIRSIM_DIR}/AirLib/include
+
+set(INCLUDE_DIRS include 
+  ${AIRSIM_ROOT}/AirLib/deps/eigen3
+  ${AIRSIM_ROOT}/AirLib/include
   ${RPC_LIB_INCLUDES}
-  ${AIRSIM_DIR}/MavLinkCom/include
-  ${AIRSIM_DIR}/MavLinkCom/common_utils
+  ${AIRSIM_ROOT}/MavLinkCom/include
+  ${AIRSIM_ROOT}/MavLinkCom/common_utils
   ${OpenCV_INCLUDE_DIRS}
-)
+  )
+include_directories(${INCLUDE_DIRS})
 
 ## Declare a C++ executable
 add_executable(airsim_node
@@ -79,13 +65,26 @@ add_library(airsim_mavros
 )
 target_link_libraries(airsim_mavros ${catkin_LIBRARIES} ${OpenCV_LIBS} yaml-cpp AirLib)
 
-add_dependencies(airsim_mavros ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(airsim_mavros ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+ament_target_dependencies(airsim_mavros 
+  rclcpp
+  sensor_msgs
+  geometry_msgs
+  nav_msgs
+  image_transport
+  tf2_ros
+  cv_bridge
+  airsim_interfaces
+)
 target_link_libraries(airsim_node airsim_mavros ${catkin_LIBRARIES} ${OpenCV_LIBS} AirLib)
 
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(airsim_node
   ${catkin_LIBRARIES}
+)
+ament_target_dependencies(airsim_node 
+  rclcpp
 )
 
 #############
@@ -95,18 +94,48 @@ target_link_libraries(airsim_node
 install(TARGETS
     #list of nodes
     airsim_node
-    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    DESTINATION lib/${PROJECT_NAME}
 )
 
 install(TARGETS 
     #list of shared libraries
     airsim_mavros
-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    ARCHIVE
+    DESTINATION lib
+    LIBRARY
+    DESTINATION lib
 )
 
 install(FILES 
   #list of necessary files (xml...)
   README.md
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  DESTINATION share/${PROJECT_NAME}
 )
+install(DIRECTORY launch rviz DESTINATION share/${PROJECT_NAME})
+
+
+
+ament_export_dependencies(rclcpp)
+ament_export_dependencies(nav_msgs)
+ament_export_dependencies(geographic_msgs)
+ament_export_dependencies(std_srvs)
+ament_export_dependencies(tf2_ros)
+ament_export_dependencies(tf2_sensor_msgs)
+ament_export_dependencies(rclpy)
+ament_export_dependencies(tf2)
+ament_export_dependencies(image_transport)
+ament_export_dependencies(geometry_msgs)
+ament_export_dependencies(cv_bridge)
+ament_export_dependencies(tf2_geometry_msgs)
+ament_export_dependencies(sensor_msgs)
+ament_export_dependencies(mavros_msgs)
+ament_export_dependencies(rosidl_default_generators)
+ament_export_dependencies(ament_cmake)
+ament_export_dependencies(std_msgs)
+ament_export_dependencies(rosidl_default_runtime)
+ament_export_dependencies(airsim_interfaces)
+
+ament_export_include_directories(${INCLUDE_DIRS})
+ament_export_libraries(airsim_mavros)
+
+ament_package()
