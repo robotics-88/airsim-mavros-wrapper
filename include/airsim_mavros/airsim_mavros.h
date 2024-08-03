@@ -225,7 +225,7 @@ private:
     AIRSIM_MODE airsim_mode_ = AIRSIM_MODE::DRONE;
 
     std::unordered_map<std::string, std::unique_ptr<VehicleROS>> vehicle_name_ptr_map_;
-    std::unique_ptr<VehicleROS> vehicle_ros_;
+    std::unique_ptr<MultiRotorROS> vehicle_ros_;
     static const std::unordered_map<int, std::string> image_type_int_to_string_map_;
     // std::map<std::string, std::string> vehicle_imu_map_;
     // std::map<std::string, std::string> vehicle_lidar_map_;

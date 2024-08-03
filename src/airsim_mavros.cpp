@@ -55,9 +55,11 @@ AirsimMavros::AirsimMavros(const std::shared_ptr<rclcpp::Node> nh, const std::sh
     static_tf_pub_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(nh_);
 
     parseAirsimSettings();
+    std::cout << "parsed settings" << std::endl;
     initialize_ros();
+    std::cout << "init ros" << std::endl;
 
-    std::cout << "AirsimMavros Initialized!\n";
+    std::cout << "AirsimMavros Initialized!\n" << std::endl;
 }
 
 bool AirsimMavros::parseAirsimSettings() {
@@ -121,6 +123,8 @@ void AirsimMavros::initialize_ros()
     nh_->get_parameter("update_imu_n_sec", imu_n_sec);
     nh_->get_parameter("enable_cameras", enable_cameras_);
 
+    nh_->declare_parameter("vehicle_name", rclcpp::ParameterValue(""));
+
     mavros_client_ = nh_->create_client<mavros_msgs::srv::StreamRate>("/mavros/set_stream_rate");
 
     create_ros_pubs_from_settings_json();
@@ -149,18 +153,18 @@ void AirsimMavros::create_ros_pubs_from_settings_json()
         auto& vehicle_setting = curr_vehicle_elem.second;
         auto curr_vehicle_name = curr_vehicle_elem.first;
 
-        nh_->set_parameter(rclcpp::Parameter("/vehicle_name", curr_vehicle_name));
+        nh_->set_parameter(rclcpp::Parameter("vehicle_name", curr_vehicle_name));
 
         set_nans_to_zeros_in_pose(*vehicle_setting);
 
-        vehicle_ros_ = nullptr;
+        // vehicle_ros_ = nullptr;
 
-        if (airsim_mode_ == AIRSIM_MODE::DRONE) {
+        // if (airsim_mode_ == AIRSIM_MODE::DRONE) {
             vehicle_ros_ = std::unique_ptr<MultiRotorROS>(new MultiRotorROS());
-        }
-        else {
-            vehicle_ros_ = std::unique_ptr<CarROS>(new CarROS());
-        }
+        // }
+        // else {
+        //     vehicle_ros_ = std::unique_ptr<CarROS>(new CarROS());
+        // }
 
         vehicle_ros_->odom_frame_id = curr_vehicle_name + "/" + odom_frame_id_;
         vehicle_ros_->vehicle_name = curr_vehicle_name;
@@ -170,9 +174,9 @@ void AirsimMavros::create_ros_pubs_from_settings_json()
 
         vehicle_ros_->global_gps_pub = nh_->create_publisher<sensor_msgs::msg::NavSatFix>(curr_vehicle_name + "/global_gps", 10);
 
-        if (airsim_mode_ == AIRSIM_MODE::DRONE) {
-            auto drone = static_cast<MultiRotorROS*>(vehicle_ros_.get());
-        }
+        // if (airsim_mode_ == AIRSIM_MODE::DRONE) {
+        //     auto drone = static_cast<MultiRotorROS*>(vehicle_ros_.get());
+        // }
 
         // iterate over camera map std::map<std::string, CameraSetting> .cameras;
         for (auto& curr_camera_elem : vehicle_setting->cameras) {
@@ -263,6 +267,8 @@ void AirsimMavros::create_ros_pubs_from_settings_json()
                 }
             }
         }
+        
+        vehicle_name_ptr_map_.emplace(curr_vehicle_name, std::move(vehicle_ros_)); // allows fast lookup in command callbacks in case of a lot of drones
     }
 
     if (publish_clock_) {
@@ -501,43 +507,48 @@ void AirsimMavros::drone_imu_timer_cb()
 
 void AirsimMavros::drone_state_timer_cb()
 {
+    std::cout << "in drone state cb" << std::endl;
     try
     {
-        std::lock_guard<std::mutex> guard(drone_control_mutex_);
 
+        std::cout << "trying drone state cb" << std::endl;
         // TODO after remove car, no need for cast, just make it default to MultiRotorROS
-        auto multirotor_ros = static_cast<MultiRotorROS*>(vehicle_ros_.get());
+        // auto multirotor_ros = static_cast<MultiRotorROS*>(vehicle_ros_.get());
 
         // get drone state from airsim
-        std::unique_lock<std::mutex> lck(drone_control_mutex_);
         rclcpp::Time curr_ros_time = nh_->now();
-        multirotor_ros->curr_drone_state = get_multirotor_client()->getMultirotorState(multirotor_ros->vehicle_name);
-        lck.unlock();
+        std::cout << "time is " << std::endl;
+        auto rpc = static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get());
+        vehicle_ros_->curr_drone_state = rpc->getMultirotorState(vehicle_ros_->vehicle_name);
 
+        std::cout << "did get multirort state " << std::endl;
         // convert airsim drone state to ROS msgs
-        multirotor_ros->curr_odom = get_odom_msg_from_multirotor_state(multirotor_ros->curr_drone_state);
+        vehicle_ros_->curr_odom = get_odom_msg_from_multirotor_state(vehicle_ros_->curr_drone_state);
         // multirotor_ros.curr_odom_ned.header.frame_id = multirotor_ros.vehicle_name;
-        multirotor_ros->curr_odom.child_frame_id = multirotor_ros->odom_frame_id;
-        multirotor_ros->curr_odom.header.stamp = curr_ros_time;
+        vehicle_ros_->curr_odom.child_frame_id = vehicle_ros_->odom_frame_id;
+        vehicle_ros_->curr_odom.header.stamp = curr_ros_time;
 
-        multirotor_ros->curr_attitude = get_attitude_from_airsim_state(multirotor_ros->curr_drone_state);
-        multirotor_ros->curr_attitude.header.stamp = curr_ros_time;
+        std::cout << "did get odom state " << std::endl;
+        vehicle_ros_->curr_attitude = get_attitude_from_airsim_state(vehicle_ros_->curr_drone_state);
+        vehicle_ros_->curr_attitude.header.stamp = curr_ros_time;
         // multirotor_ros.curr_attitude.child_frame_id = multirotor_ros.odom_frame_id;
 
         // multirotor_ros.curr_odom_ned.header.stamp = curr_ros_time;
 
-        multirotor_ros->gps_sensor_msg = get_gps_sensor_msg_from_airsim_geo_point(multirotor_ros->curr_drone_state.gps_location);
-        multirotor_ros->gps_sensor_msg.header.stamp = curr_ros_time;
+        vehicle_ros_->gps_sensor_msg = get_gps_sensor_msg_from_airsim_geo_point(vehicle_ros_->curr_drone_state.gps_location);
+        vehicle_ros_->gps_sensor_msg.header.stamp = curr_ros_time;
 
+        std::cout << "now pubs " << std::endl;
         // publish to ROS!  
-        multirotor_ros->odom_local_pub->publish(multirotor_ros->curr_odom);
+        vehicle_ros_->odom_local_pub->publish(vehicle_ros_->curr_odom);
         // multirotor_ros->attitude_pub->publish(multirotor_ros->curr_attitude);
-        publish_odom_tf(multirotor_ros->curr_odom);
-        multirotor_ros->global_gps_pub->publish(multirotor_ros->gps_sensor_msg);
+        publish_odom_tf(vehicle_ros_->curr_odom);
+        vehicle_ros_->global_gps_pub->publish(vehicle_ros_->gps_sensor_msg);
 
         update_and_publish_static_transforms(vehicle_ros_.get());
 
         has_gimbal_cmd_ = false;
+        std::cout << "published drone state" << std::endl;
     }
 
     catch (rpc::rpc_error& e)
@@ -561,6 +572,7 @@ void AirsimMavros::update_and_publish_static_transforms(VehicleROS* vehicle_ros)
 
 void AirsimMavros::publish_odom_tf(const nav_msgs::msg::Odometry& odom_ned_msg)
 {
+    std::cout << "entered odom pub" << std::endl;
     geometry_msgs::msg::TransformStamped odom_tf;
     odom_tf.header.frame_id = odom_frame_id_;
     odom_tf.header.stamp = odom_ned_msg.header.stamp;// nh_->now();

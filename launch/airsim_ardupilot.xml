@@ -1,0 +1,27 @@
+<launch>
+	<!-- vim: set ft=xml noet : -->
+	<!-- example launch script for ArduPilot based FCU's -->
+
+	<!-- <arg name="fcu_url" default="/dev/ttyACM0:57600" /> -->
+	<arg name="fcu_url" default="udp://127.0.0.1:14551@" />
+	<arg name="gcs_url" default="" />
+	<arg name="tgt_system" default="1" />
+	<arg name="tgt_component" default="1" />
+	<arg name="log_output" default="screen" />
+	<arg name="fcu_protocol" default="v2.0" />
+	<arg name="respawn_mavros" default="false" />
+	<arg name="config_file" default="$(find-pkg-prefix airsim_launch)/config/apm_default_config.yaml"/>
+
+	<node pkg="mavros" exec="mavros_node" respawn="false" name="mavros_node" output="screen">
+		<param name="pluginlists_yaml" value="$(find-pkg-prefix airsim_launch)/config/pluginlists.yaml" />
+		<param name="config_yaml" value="$(var config_file)" />
+
+		<param name="fcu_url" value="$(var fcu_url)" />
+		<param name="gcs_url" value="$(var gcs_url)" />
+		<param name="tgt_system" value="$(var tgt_system)" />
+		<param name="tgt_component" value="$(var tgt_component)" />
+		<param name="log_output" value="$(var log_output)" />
+		<param name="fcu_protocol" value="$(var fcu_protocol)" />
+		<param name="respawn_mavros" value="$(var respawn_mavros)" />
+	</node>
+</launch>
