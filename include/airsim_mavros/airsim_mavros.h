@@ -232,7 +232,7 @@ private:
 
     bool is_vulkan_ = false; // rosparam obtained from launch file. If vulkan is being used, we BGR encoding instead of RGB
 
-    std::unique_ptr<msr::airlib::RpcLibClientBase> airsim_client_ = nullptr;
+    std::unique_ptr<msr::airlib::RpcLibClientBase> airsim_client_;
     // seperate busy connections to airsim, update in their own thread
     msr::airlib::RpcLibClientBase airsim_client_images_;
     msr::airlib::RpcLibClientBase airsim_client_lidar_;
