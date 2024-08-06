@@ -142,28 +142,22 @@ mission:
 # debug_value
 # None
 
-obstacle_distance:
-  revised_scan:
-    subscriber: true
-    id: 1
-    orientation: NONE  # only that orientation are supported by APM 3.4+
-
 # distance_sensor
 ## Currently available orientations:
 #    Check http://wiki.ros.org/mavros/Enumerations
 ##
-# distance_sensor:
-#   # rangefinder_pub:
-#     # id: 0
-#     # frame_id: "base_link"
-#     # orientation: NONE # sended by FCU
-#     # field_of_view: 0.0  # XXX TODO
-#     # send_tf: false
-#     # sensor_position: {x:  0.0, y:  0.0, z:  0.0}
-#   rangefinder_sub:
-#     subscriber: true
-#     id: 1
-#     orientation: NONE  # only that orientation are supported by APM 3.4+
+distance_sensor:
+  rangefinder_pub:
+    id: 0
+    frame_id: "lidar"
+    #orientation: PITCH_270 # sended by FCU
+    field_of_view: 0.0  # XXX TODO
+    send_tf: false
+    sensor_position: {x:  0.0, y:  0.0, z:  -0.1}
+  rangefinder_sub:
+    subscriber: true
+    id: 1
+    orientation: PITCH_270  # only that orientation are supported by APM 3.4+
 
 # image_pub
 image:
