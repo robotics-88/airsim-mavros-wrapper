@@ -7,7 +7,7 @@ find_package(OpenCV REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 
-## Find catkin macros and libraries
+## Find macros and libraries
 find_package(rclcpp REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(geographic_msgs REQUIRED)
@@ -28,7 +28,7 @@ find_package(rosidl_typesupport_cpp REQUIRED)
 find_package(rosidl_default_runtime REQUIRED)
 find_package(airsim_interfaces REQUIRED)
 
-# set this to path to AirSim root folder if you want your catkin workspace in a custom directory
+# set this to path to AirSim root folder if you want your workspace in a custom directory
 set(AIRSIM_DIR $ENV{AIRSIM_DIR})
 
 add_subdirectory("${AIRSIM_DIR}/cmake/rpclib_wrapper" rpclib_wrapper)
@@ -68,9 +68,8 @@ add_executable(airsim_node
 add_library(airsim_mavros 
   src/airsim_mavros.cpp
 )
-target_link_libraries(airsim_mavros ${catkin_LIBRARIES} ${OpenCV_LIBS} yaml-cpp AirLib)
+target_link_libraries(airsim_mavros ${OpenCV_LIBS} yaml-cpp AirLib)
 
-# add_dependencies(airsim_mavros ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 ament_target_dependencies(airsim_mavros 
   rclcpp
   sensor_msgs
@@ -81,13 +80,8 @@ ament_target_dependencies(airsim_mavros
   tf2_ros
   cv_bridge
 )
-target_link_libraries(airsim_node airsim_mavros ${catkin_LIBRARIES} ${OpenCV_LIBS} AirLib)
+target_link_libraries(airsim_node airsim_mavros ${OpenCV_LIBS} AirLib)
 
-
-## Specify libraries to link a library or executable target against
-target_link_libraries(airsim_node
-  ${catkin_LIBRARIES}
-)
 ament_target_dependencies(airsim_node 
   rclcpp
 )
