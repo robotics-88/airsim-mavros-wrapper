@@ -25,15 +25,15 @@
         <param name="enable_cameras" value="$(var enable_cameras)" />
     </node>
 
-    <!-- <group if="$(var do_slam)">
+    <group if="$(var do_slam)">
         <include file="$(find-pkg-share rs_to_velodyne)/launch/rs_to_velodyne.launch">
             <arg name="raw_lidar_topic" value="$(var raw_lidar_topic)"/>
             <arg name="input_cloud_type" value="XYZI"/>
             <arg name="output_cloud_type" value="XYZIR"/>
         </include>
 
-        <node pkg="tf" exec="static_transform_publisher" name="velodyne_pub" args="0 0 0 0 0 0 base_link/Lidar2 velodyne 100"/>
-    </group> -->
+        <node pkg="tf2_ros" exec="static_transform_publisher" name="velodyne_pub" args="0 0 0 0 0 0 base_link/Lidar2 velodyne"/>
+    </group>
 
-    <node exec="rviz2" name="airsim_rviz" pkg="rviz2" args="-d $(find-pkg-prefix airsim_launch)/config/airsim_slam.rviz" output="log"/>
+    <!-- <node exec="rviz2" name="airsim_rviz" pkg="rviz2" args="-d $(find-pkg-share airsim_launch)/config/airsim2.rviz" output="log"/> -->
 </launch>

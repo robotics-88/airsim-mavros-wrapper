@@ -26,7 +26,6 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rosidl_typesupport_cpp REQUIRED)
 find_package(rosidl_default_runtime REQUIRED)
-find_package(airsim_interfaces REQUIRED)
 
 # set this to path to AirSim root folder if you want your workspace in a custom directory
 set(AIRSIM_DIR $ENV{AIRSIM_DIR})

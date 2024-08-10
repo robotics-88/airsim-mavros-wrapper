@@ -10,43 +10,31 @@
 
     <!-- Autopilot selection (TBD setting up PX4) -->
     <arg name="ardupilot" default="true"/>
-    <include file="$(find airsim_launch)/launch/airsim_ardupilot.launch" if="$(arg ardupilot)">
-        <arg name="config_file" value="$(find airsim_launch)/config/apm_slam_config.yaml" if="$(arg do_slam)"/>
-    </include>
-    <include file="$(find airsim_launch)/launch/airsim_px4.launch" unless="$(arg ardupilot)"/>
-    <node pkg="rosservice" type="rosservice" name="rosservice" args="call --wait /mavros/set_stream_rate 0 50 1"/>
+    <include file="$(find-pkg-share airsim_launch)/launch/airsim_ardupilot.xml"/>
+        <!-- <arg name="config_file" value="$(find airsim_launch)/config/apm_default_config.yaml"/>
+    </include> -->
+    <!-- <include file="$(find-pkg-share airsim_launch)/launch/airsim_px4.launch" unless="$(var ardupilot)"/> -->
+    <!-- <node pkg="rosservice" exec="rosservice" name="rosservice" args="call - -wait /mavros/set_stream_rate 0 50 1"/> -->
 
-    <node pkg="tf" type="static_transform_publisher" name="ned_to_enu_pub" args="0 0 0 1.57 0 3.14 world_ned world 100"/>
-    <!-- <node pkg="tf" type="static_transform_publisher" name="ned_to_enu_map_pub" args="0 0 0 1.57 0 3.14 map_ned map 100"/> -->
+    <node pkg="tf2_ros" exec="static_transform_publisher" name="ned_to_enu_pub" args="0 0 0 1.57 0 3.14 world_ned world"/>
+    <!-- <node pkg="tf" exec="static_transform_publisher" name="ned_to_enu_map_pub" args="0 0 0 1.57 0 3.14 map_ned map"/> -->
 
     <!-- Airsim launcher -->
     <arg name="vehicle_name" default="MyVehicle"/> <!-- The vehicle name from ardupilot_settings.json -->
-    <arg name="enable_cameras" default="false"/> <arg name="enable_cameras" default="false"/> <!-- Enabling cameras slows the publish rate of everything to 3Hz so only enable if required -->
-    <include file="$(find vehicle_launch)/launch/airsim.launch" if="$(arg simulate)">
-        <arg name="do_slam" value="$(arg do_slam)"/>
-        <arg name="enable_cameras" value="$(arg enable_cameras)"/>
-        <arg name="vehicle_name" value="$(arg vehicle_name)"/>
+    <arg name="enable_cameras" default="false"/> <!-- Enabling cameras slows the publish rate of everything to 3Hz so only enable if required -->
+    <include file="$(find-pkg-share airsim_launch)/launch/airsim.xml">
+        <arg name="do_slam" value="$(var do_slam)"/>
+        <arg name="enable_cameras" value="$(var enable_cameras)"/>
+        <arg name="vehicle_name" value="$(var vehicle_name)"/>
     </include>
 
     <!-- Feature nodes -->
-    <arg name="imu_topic" default="/mavros/imu/data"/>
-    <include file="$(find path_planning)/launch/slam.launch" if="$(arg do_slam)">
-        <arg name="lidar_type" value="2"/> <!-- 2 corresponds to velodyne which is what Airsim with rs_to_velodyne publishes -->
-        <arg name="imu_topic" value="$(arg imu_topic)"/>
-        <arg name="rviz" value="$(arg simulate)"/>
-    </include>
+    <!-- <arg name="imu_topic" default="/mavros/imu/data"/>
+    <include file="$(find-pkg-share path_planning)/launch/slam.launch" if="$(var do_slam)">
+        <arg name="lidar_type" value="2"/> <!- - 2 corresponds to velodyne which is what Airsim with rs_to_velodyne publishes - ->
+        <arg name="imu_topic" value="$(var imu_topic)"/>
+        <arg name="rviz" value="$(var simulate)"/>
+    </include> -->
 
-    <include file="$(find range_data_to_mavros)/launch/range_data_to_mavros.launch">
-        <arg name="point_cloud_topic" value="$(arg raw_lidar_topic)"/>
-        <arg name="data_type" value="point_cloud"/>
-    </include>
-
-    <include file="$(find octomap_slice)/launch/octomap_full_handling.launch" if="$(arg do_octomap)">
-        <arg name="cloud_topic" value="$(arg raw_lidar_topic)"/>
-        <arg name="octomap_res" value="$(arg map_resolution)"/>
-        <arg name="slice_height" value="$(arg default_alt)"/>
-        <arg name="rviz" value="false"/>
-    </include>
-
-    <node type="rviz" name="airsim_rviz" pkg="rviz" args="-d $(find airsim_launch)/config/airsim_octo.rviz" output="log"/>
+    <node exec="rviz2" name="airsim_rviz" pkg="rviz2" args="-d $(find-pkg-share airsim_launch)/config/airsim2.rviz" output="log"/>
 </launch>
