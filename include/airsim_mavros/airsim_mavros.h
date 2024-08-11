@@ -75,7 +75,7 @@ struct SensorPublisher
     typename rclcpp::Publisher<T>::SharedPtr publisher;
 };
 
-class AirsimMavros
+class AirsimMavros : public rclcpp::Node
 {
     using AirSimSettings = msr::airlib::AirSimSettings;
     using SensorBase = msr::airlib::SensorBase;
@@ -93,8 +93,8 @@ public:
         DRONE,
         CAR
     };
-
-    AirsimMavros(const std::shared_ptr<rclcpp::Node> nh, const std::shared_ptr<rclcpp::Node> nh_img, const std::shared_ptr<rclcpp::Node> nh_lidar, const std::string& host_ip);
+    explicit AirsimMavros(const rclcpp::NodeOptions &options);
+    // AirsimMavros(const std::shared_ptr<rclcpp::Node> nh, const std::shared_ptr<rclcpp::Node> nh_img, const std::shared_ptr<rclcpp::Node> nh_lidar, const std::string& host_ip);
     ~AirsimMavros(){};
 
     void initialize_airsim();
@@ -214,9 +214,9 @@ private:
                                                      SensorBase::SensorType sensor_type, const std::string& topic_name, int QoS);
 
 private:
-    std::shared_ptr<rclcpp::Node> nh_;
     std::shared_ptr<rclcpp::Node> nh_img_;
     std::shared_ptr<rclcpp::Node> nh_lidar_;
+    image_transport::ImageTransport image_transport_;
 
     std::string host_ip_;
 
