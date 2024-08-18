@@ -35,5 +35,4 @@
         <node pkg="tf2_ros" exec="static_transform_publisher" name="velodyne_pub" args="0 0 0 0 0 0 base_link/Lidar2 velodyne"/>
     </group>
 
-    <!-- <node exec="rviz2" name="airsim_rviz" pkg="rviz2" args="-d $(find-pkg-share airsim_launch)/config/airsim2.rviz" output="log"/> -->
 </launch>

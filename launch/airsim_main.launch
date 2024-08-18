@@ -36,5 +36,5 @@
         <arg name="rviz" value="$(var simulate)"/>
     </include> -->
 
-    <node exec="rviz2" name="airsim_rviz" pkg="rviz2" args="-d $(find-pkg-share airsim_launch)/config/airsim2.rviz" output="log"/>
+    <node exec="rviz2" name="airsim_rviz" pkg="rviz2" args="-d $(find-pkg-share airsim_launch)/launch/config/airsim2.rviz" output="log"/>
 </launch>

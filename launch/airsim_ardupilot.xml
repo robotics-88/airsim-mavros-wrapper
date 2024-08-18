@@ -10,10 +10,10 @@
 	<arg name="log_output" default="screen" />
 	<arg name="fcu_protocol" default="v2.0" />
 	<arg name="respawn_mavros" default="false" />
-	<arg name="config_file" default="$(find-pkg-prefix airsim_launch)/config/apm_default_config.yaml"/>
+	<arg name="config_file" default="$(find-pkg-prefix airsim_launch)/launch/config/apm_default_config.yaml"/>
 
 	<node pkg="mavros" exec="mavros_node" respawn="true" name="mavros_node" output="screen">
-		<param name="pluginlists_yaml" value="$(find-pkg-prefix airsim_launch)/config/pluginlists.yaml" />
+		<param name="pluginlists_yaml" value="$(find-pkg-prefix airsim_launch)/launch/config/pluginlists.yaml" />
 		<param name="config_yaml" value="$(var config_file)" />
 
 		<param name="fcu_url" value="$(var fcu_url)" />
