@@ -40,7 +40,7 @@ set(CXX_EXP_LIB "-nostdinc++ -I/usr/include/c++/8 -I/usr/include/x86_64-linux-gn
 -l/usr/lib/x86_64-linux-gnu/libc++.so -l/usr/lib/x86_64-linux-gnu/libc++abi.so
 -lm -lc -lgcc_s -lgcc
 -lstdc++fs -fmax-errors=10")
-set(RPC_LIB_INCLUDES " ${AIRSIM_ROOT}/external/rpclib/rpclib-2.3.0/include")
+set(RPC_LIB_INCLUDES " ${AIRSIM_DIR}/external/rpclib/rpclib-2.3.0/include")
 set(RPC_LIB rpc)
 message(STATUS "found RPC_LIB_INCLUDES=${RPC_LIB_INCLUDES}")
 
@@ -50,11 +50,11 @@ message(STATUS "found RPC_LIB_INCLUDES=${RPC_LIB_INCLUDES}")
 
 
 set(INCLUDE_DIRS include 
-  ${AIRSIM_ROOT}/AirLib/deps/eigen3
-  ${AIRSIM_ROOT}/AirLib/include
+  ${AIRSIM_DIR}/AirLib/deps/eigen3
+  ${AIRSIM_DIR}/AirLib/include
   ${RPC_LIB_INCLUDES}
-  ${AIRSIM_ROOT}/MavLinkCom/include
-  ${AIRSIM_ROOT}/MavLinkCom/common_utils
+  ${AIRSIM_DIR}/MavLinkCom/include
+  ${AIRSIM_DIR}/MavLinkCom/common_utils
   ${OpenCV_INCLUDE_DIRS}
   )
 include_directories(${INCLUDE_DIRS})
@@ -76,8 +76,11 @@ ament_target_dependencies(airsim_mavros
   mavros_msgs
   nav_msgs
   image_transport
+  tf2_geometry_msgs
   tf2_ros
+  tf2_sensor_msgs
   cv_bridge
+  std_srvs
 )
 target_link_libraries(airsim_node airsim_mavros ${OpenCV_LIBS} AirLib)
 
