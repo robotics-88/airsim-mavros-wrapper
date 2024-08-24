@@ -2,7 +2,7 @@
 	<!-- vim: set ft=xml noet : -->
 	<!-- example launch script for ArduPilot based FCU's -->
 
-	<arg name="do_slam" default="false"/>
+	<arg name="do_slam" default="true"/>
 
 	<arg name="fcu_url" default="udp://127.0.0.1:14551@" />
 	<!-- <arg name="fcu_url" default="/dev/ttyACM0:57600" /> -->
@@ -18,7 +18,7 @@
 	<let name="config_yaml" value="$(find-pkg-share airsim_launch)/launch/config/apm_default_config.yaml" unless="$(var do_slam)"/>
 
 	<include file="$(find-pkg-share mavros)/launch/node.launch">
-		<arg name="pluginlists_yaml" value="$(find-pkg-share vehicle_launch)/config/apm_pluginlists.yaml" />
+		<arg name="pluginlists_yaml" value="$(find-pkg-share airsim_launch)/launch/config/pluginlists.yaml" />
 		<arg name="config_yaml" value="$(var config_yaml)"/>
 		<arg name="fcu_url" value="$(var fcu_url)" />
 		<arg name="gcs_url" value="$(var gcs_url)" />

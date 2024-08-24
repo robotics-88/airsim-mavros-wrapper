@@ -10,11 +10,13 @@
 
     <!-- Autopilot selection (TBD setting up PX4) -->
     <arg name="ardupilot" default="true"/>
-    <include file="$(find-pkg-share airsim_launch)/launch/airsim_ardupilot.xml"/>
+    <include file="$(find-pkg-share airsim_launch)/launch/airsim_ardupilot.xml">
+        <arg name="do_slam" value="$(var do_slam)"/>
+    </include>
         <!-- <arg name="config_file" value="$(find airsim_launch)/config/apm_default_config.yaml"/>
     </include> -->
     <!-- <include file="$(find-pkg-share airsim_launch)/launch/airsim_px4.launch" unless="$(var ardupilot)"/> -->
-    <!-- <node pkg="rosservice" exec="rosservice" name="rosservice" args="call - -wait /mavros/set_stream_rate 0 50 1"/> -->
+    <!-- <node pkg="service" exec="service" name="ros2service" args="call - -wait /mavros/set_stream_rate 0 50 1"/> -->
 
     <node pkg="tf2_ros" exec="static_transform_publisher" name="ned_to_enu_pub" args="0 0 0 1.57 0 3.14 world_ned world"/>
     <!-- <node pkg="tf" exec="static_transform_publisher" name="ned_to_enu_map_pub" args="0 0 0 1.57 0 3.14 map_ned map"/> -->
