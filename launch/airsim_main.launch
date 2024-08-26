@@ -2,24 +2,22 @@
 
     <!-- Which nodes -->
     <arg name="do_slam" default="true"/>
-    <arg name="do_octomap" default="false"/>
 
     <!-- Common control args -->
     <arg name="default_alt" default="2.0"/> <!-- Must be between min/max or path planning fails -->
-    <arg name="map_resolution" default="1.0"/> <!-- m-->
 
     <!-- Autopilot selection (TBD setting up PX4) -->
-    <arg name="ardupilot" default="true"/>
     <include file="$(find-pkg-share airsim_launch)/launch/airsim_ardupilot.xml">
         <arg name="do_slam" value="$(var do_slam)"/>
     </include>
-        <!-- <arg name="config_file" value="$(find airsim_launch)/config/apm_default_config.yaml"/>
-    </include> -->
-    <!-- <include file="$(find-pkg-share airsim_launch)/launch/airsim_px4.launch" unless="$(var ardupilot)"/> -->
-    <!-- <node pkg="service" exec="service" name="ros2service" args="call - -wait /mavros/set_stream_rate 0 50 1"/> -->
 
-    <node pkg="tf2_ros" exec="static_transform_publisher" name="ned_to_enu_pub" args="0 0 0 1.57 0 3.14 world_ned world"/>
-    <!-- <node pkg="tf" exec="static_transform_publisher" name="ned_to_enu_map_pub" args="0 0 0 1.57 0 3.14 map_ned map"/> -->
+    <executable
+        cmd="/mavros/set_stream_rate mavros_msgs/srv/StreamRate '{stream_id: 0, message_rate: 50.0, on_off: True}'"
+        cwd="/home"
+        launch-prefix="ros2 service call"
+        output="screen"
+        >
+    </executable>
 
     <!-- Airsim launcher -->
     <arg name="vehicle_name" default="MyVehicle"/> <!-- The vehicle name from ardupilot_settings.json -->
