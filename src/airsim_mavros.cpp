@@ -90,13 +90,7 @@ void AirsimMavros::initialize_airsim()
 {
     // todo do not reset if already in air?
     try {
-
-        // if (airsim_mode_ == AIRSIM_MODE::DRONE) {
-            airsim_client_ = std::unique_ptr<msr::airlib::RpcLibClientBase>(new msr::airlib::MultirotorRpcLibClient(host_ip_));
-        // }
-        // else {
-        //     airsim_client_ = std::unique_ptr<msr::airlib::RpcLibClientBase>(new msr::airlib::CarRpcLibClient(host_ip_));
-        // }
+        airsim_client_ = std::unique_ptr<msr::airlib::RpcLibClientBase>(new msr::airlib::MultirotorRpcLibClient(host_ip_));
         airsim_client_->confirmConnection();
         airsim_client_images_.confirmConnection();
         airsim_client_lidar_.confirmConnection();
@@ -130,9 +124,7 @@ void AirsimMavros::initialize_ros()
     create_ros_pubs_from_settings_json();
     airsim_control_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
     airsim_control_update_timer_ = this->create_wall_timer(std::chrono::duration<double>(update_airsim_control_every_n_sec), std::bind(&AirsimMavros::drone_state_timer_cb, this), airsim_control_callback_group_);
-    // this.createTimer(rclcpp::Duration(update_airsim_control_every_n_sec), &AirsimMavros::drone_state_timer_cb, this);
     airsim_imu_update_timer_ = this->create_wall_timer(std::chrono::duration<double>(imu_n_sec), std::bind(&AirsimMavros::drone_imu_timer_cb, this), airsim_control_callback_group_);
-    // this.createTimer(rclcpp::Duration(imu_n_sec), &AirsimMavros::drone_imu_timer_cb, this);
 }
 
 void AirsimMavros::create_ros_pubs_from_settings_json()
@@ -142,8 +134,6 @@ void AirsimMavros::create_ros_pubs_from_settings_json()
     cam_info_pub_vec_.clear();
     camera_info_msg_vec_.clear();
     vehicle_name_ptr_map_.clear();
-    // imu_pub_vec_.clear();
-    // lidar_pub_vec_.clear();
     size_t lidar_cnt = 0;
 
     // iterate over std::map<std::string, std::unique_ptr<VehicleSetting>> vehicles;
@@ -155,26 +145,14 @@ void AirsimMavros::create_ros_pubs_from_settings_json()
 
         set_nans_to_zeros_in_pose(*vehicle_setting);
 
-        // vehicle_ros_ = nullptr;
-
-        // if (airsim_mode_ == AIRSIM_MODE::DRONE) {
-            vehicle_ros_ = std::unique_ptr<MultiRotorROS>(new MultiRotorROS());
-        // }
-        // else {
-        //     vehicle_ros_ = std::unique_ptr<CarROS>(new CarROS());
-        // }
+        vehicle_ros_ = std::unique_ptr<MultiRotorROS>(new MultiRotorROS());
 
         vehicle_ros_->odom_frame_id = curr_vehicle_name + "/" + odom_frame_id_;
         vehicle_ros_->vehicle_name = curr_vehicle_name;
 
         vehicle_ros_->odom_local_pub = this->create_publisher<nav_msgs::msg::Odometry>(curr_vehicle_name + "/" + odom_frame_id_, 10);
-        // vehicle_ros_->attitude_pub = this->create_publisher<geometry_msgs::msg::QuaternionStamped>(curr_vehicle_name + "/attitude", 10);
 
         vehicle_ros_->global_gps_pub = this->create_publisher<sensor_msgs::msg::NavSatFix>(curr_vehicle_name + "/global_gps", 10);
-
-        // if (airsim_mode_ == AIRSIM_MODE::DRONE) {
-        //     auto drone = static_cast<MultiRotorROS*>(vehicle_ros_.get());
-        // }
 
         // iterate over camera map std::map<std::string, CameraSetting> .cameras;
         for (auto& curr_camera_elem : vehicle_setting->cameras) {
@@ -250,8 +228,6 @@ void AirsimMavros::create_ros_pubs_from_settings_json()
                         msr::airlib::LidarSimpleParams params;
                         params.initializeFromSettings(lidar_setting);
                         append_static_lidar_tf(vehicle_ros_.get(), sensor_name, params);
-                        // vehicle_lidar_map_[curr_vehicle_name] = sensor_name; // non scalable 
-                        // lidar_pub_vec_.push_back(nh_private_.advertise<sensor_msgs::msg::PointCloud2> (curr_vehicle_name + "/lidar/" + sensor_name, 10));
 
                         SensorPublisher<sensor_msgs::msg::PointCloud2> sensor_publisher =
                             create_sensor_publisher<sensor_msgs::msg::PointCloud2>("Lidar", sensor_setting->sensor_name, sensor_setting->sensor_type, curr_vehicle_name + "/lidar/" + sensor_name, 10);
@@ -260,7 +236,7 @@ void AirsimMavros::create_ros_pubs_from_settings_json()
                         break;
                     }
                     default: {
-                        // throw std::invalid_argument("Unexpected sensor type");
+                        // TODO handle this?
                     }
                 }
             }
@@ -412,40 +388,10 @@ sensor_msgs::msg::NavSatFix AirsimMavros::get_gps_sensor_msg_from_airsim_geo_poi
     return gps_msg;
 }
 
-// rclcpp::Time AirsimMavros::chrono_timestamp_to_ros(const std::chrono::system_clock::time_point& stamp) const
-// {
-//     auto dur = std::chrono::duration<double>(stamp.time_since_epoch());
-//     rclcpp::Time cur_time;
-//     cur_time.fromSec(dur.count());
-//     return cur_time;
-// }
-
-// rclcpp::Time AirsimMavros::airsim_timestamp_to_ros(const msr::airlib::TTimePoint& stamp) const
-// {
-//     // airsim appears to use chrono::system_clock with nanosecond precision
-//     std::chrono::nanoseconds dur(stamp);
-//     std::chrono::time_point<std::chrono::system_clock> tp(dur);
-//     rclcpp::Time cur_time = chrono_timestamp_to_ros(tp);
-//     return cur_time;
-// }
-
 msr::airlib::MultirotorRpcLibClient* AirsimMavros::get_multirotor_client()
 {
     return static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get());
 }
-
-// msr::airlib::CarRpcLibClient* AirsimMavros::get_car_client()
-// {
-//     return static_cast<msr::airlib::CarRpcLibClient*>(airsim_client_.get());
-// }
-
-// rclcpp::Time AirsimMavros::make_ts(uint64_t unreal_ts) {
-//     if (first_imu_unreal_ts < 0) {
-//         first_imu_unreal_ts = unreal_ts;
-//         first_imu_ros_ts = this->now();
-//     }
-//     return  first_imu_ros_ts + rclcpp::Duration( (unreal_ts- first_imu_unreal_ts)/1e9);
-// }
 
 sensor_msgs::msg::Imu AirsimMavros::get_imu_msg_from_airsim(const msr::airlib::ImuBase::Output& imu_data)
 {
@@ -519,22 +465,17 @@ void AirsimMavros::drone_state_timer_cb()
 
             // convert airsim drone state to ROS msgs
             multirotor_ros->curr_odom = get_odom_msg_from_multirotor_state(multirotor_ros->curr_drone_state);
-            // multirotor_ros.curr_odom_ned.header.frame_id = multirotor_ros.vehicle_name;
             multirotor_ros->curr_odom.child_frame_id = multirotor_ros->odom_frame_id;
             multirotor_ros->curr_odom.header.stamp = curr_ros_time;
 
             multirotor_ros->curr_attitude = get_attitude_from_airsim_state(multirotor_ros->curr_drone_state);
             multirotor_ros->curr_attitude.header.stamp = curr_ros_time;
-            // multirotor_ros.curr_attitude.child_frame_id = multirotor_ros.odom_frame_id;
-
-            // multirotor_ros.curr_odom_ned.header.stamp = curr_ros_time;
 
             multirotor_ros->gps_sensor_msg = get_gps_sensor_msg_from_airsim_geo_point(multirotor_ros->curr_drone_state.gps_location);
             multirotor_ros->gps_sensor_msg.header.stamp = curr_ros_time;
 
             // publish to ROS!  
             multirotor_ros->odom_local_pub->publish(multirotor_ros->curr_odom);
-            // multirotor_ros->attitude_pub->publish(multirotor_ros->curr_attitude);
             publish_odom_tf(multirotor_ros->curr_odom);
             multirotor_ros->global_gps_pub->publish(multirotor_ros->gps_sensor_msg);
 
@@ -557,7 +498,6 @@ void AirsimMavros::update_and_publish_static_transforms(VehicleROS* vehicle_ros)
     // TODO updating static makes no sense other than to check for newly added static tf, which would also be very uncommon midrun. make part of instantiation but not regular loop.
     if (vehicle_ros && !vehicle_ros->static_tf_msg_vec.empty()) {
         for (auto& static_tf_msg : vehicle_ros->static_tf_msg_vec) {
-            // static_tf_msg.header.stamp = vehicle_ros->stamp;
             static_tf_pub_->sendTransform(static_tf_msg);
         }
     }
@@ -726,28 +666,6 @@ void AirsimMavros::lidar_timer_cb()
             }
         }
     }
-    // try
-    // {
-    //     // std::lock_guard<std::recursive_mutex> guard(drone_control_mutex_);
-    //     if (lidar_pub_vec_.size() > 0)
-    //     {
-    //         // std::lock_guard<std::recursive_mutex> guard(lidar_mutex_);
-    //         int ctr = 0;
-    //         for (const auto& vehicle_lidar_pair: vehicle_lidar_map_)
-    //         {
-    //             std::unique_lock<std::recursive_mutex> lck(drone_control_mutex_);
-    //             rclcpp::Time curr_ros_time = this->now();
-    //             auto lidar_data = airsim_client_lidar_.getLidarData(vehicle_lidar_pair.second, vehicle_lidar_pair.first); // airsim api is imu_name, vehicle_name
-    //             lck.unlock();
-    //             sensor_msgs::PointCloud2 lidar_msg = get_lidar_msg_from_airsim(lidar_data); // todo make const ptr msg to avoid copy
-    //             lidar_msg.header.frame_id = vehicle_frame_id_+ "/" + vehicle_lidar_pair.second; // sensor frame name. todo add to doc
-    //             lidar_msg.header.stamp = curr_ros_time;
-    //             lidar_pub_vec_[ctr].publish(lidar_msg);
-    //             ctr++;
-    //         } 
-    //     }
-
-    // }
 
     catch (rpc::rpc_error& e)
     {
@@ -774,7 +692,7 @@ std::shared_ptr<sensor_msgs::msg::Image> AirsimMavros::get_img_msg_from_response
     std::shared_ptr<sensor_msgs::msg::Image> img_msg_ptr = std::make_shared<sensor_msgs::msg::Image>();
     img_msg_ptr->data = img_response.image_data_uint8;
     img_msg_ptr->step = img_response.width * 3; // todo un-hardcode. image_width*num_bytes? or img_msg_ptr->step = img_response.image_data_uint8.size() / img_response.height;
-    img_msg_ptr->header.stamp = rclcpp::Time(img_response.time_stamp);// curr_ros_time;// airsim_timestamp_to_ros(img_response.time_stamp);
+    img_msg_ptr->header.stamp = rclcpp::Time(img_response.time_stamp);
     img_msg_ptr->header.frame_id = frame_id;
     img_msg_ptr->height = img_response.height;
     img_msg_ptr->width = img_response.width;

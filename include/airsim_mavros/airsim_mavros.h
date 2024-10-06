@@ -95,15 +95,11 @@ public:
         CAR
     };
     explicit AirsimMavros(const rclcpp::NodeOptions &options);
-    // AirsimMavros(const std::shared_ptr<rclcpp::Node> nh, const std::shared_ptr<rclcpp::Node> nh_img, const std::shared_ptr<rclcpp::Node> nh_lidar, const std::string& host_ip);
     ~AirsimMavros(){};
 
     void initialize_airsim();
     void initialize_ros();
 
-    // std::vector<ros::CallbackQueue> callback_queues_;
-    // ros::AsyncSpinner img_async_spinner_;
-    // ros::AsyncSpinner lidar_async_spinner_;
     bool is_used_lidar_timer_cb_queue_;
     bool is_used_img_timer_cb_queue_;
 
@@ -143,9 +139,6 @@ private:
     {
     public:
         msr::airlib::CarApiBase::CarState curr_car_state_;
-
-        // bool has_car_cmd_;
-        // msr::airlib::CarApiBase::CarControls car_cmd_;
     };
 
     class MultiRotorROS : public VehicleROS
@@ -153,9 +146,6 @@ private:
     public:
         /// State
         msr::airlib::MultirotorState curr_drone_state;
-
-        // bool has_vel_cmd_;
-        // VelCmd vel_cmd_;
     };
 
     bool parseAirsimSettings();
@@ -228,8 +218,6 @@ private:
     std::unordered_map<std::string, std::unique_ptr<VehicleROS>> vehicle_name_ptr_map_;
     std::unique_ptr<MultiRotorROS> vehicle_ros_;
     static const std::unordered_map<int, std::string> image_type_int_to_string_map_;
-    // std::map<std::string, std::string> vehicle_imu_map_;
-    // std::map<std::string, std::string> vehicle_lidar_map_;
 
     bool is_vulkan_ = false; // rosparam obtained from launch file. If vulkan is being used, we BGR encoding instead of RGB
 
@@ -237,11 +225,6 @@ private:
     // seperate busy connections to airsim, update in their own thread
     msr::airlib::RpcLibClientBase airsim_client_images_;
     msr::airlib::RpcLibClientBase airsim_client_lidar_;
-
-    // todo not sure if async spinners shuold be inside this class, or should be instantiated in airsim_node.cpp, and cb queues should be public
-    // todo for multiple drones with multiple sensors, this won't scale. make it a part of VehicleROS?
-    // ros::CallbackQueue img_timer_cb_queue_;
-    // ros::CallbackQueue lidar_timer_cb_queue_;
 
     std::mutex drone_control_mutex_;
 
@@ -284,14 +267,7 @@ private:
     std::vector<rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr> cam_info_pub_vec_;
     std::vector<sensor_msgs::msg::CameraInfo> camera_info_msg_vec_;
 
-    // typedef std::pair<std::vector<ImageRequest>, std::string> airsim_img_request_vehicle_name_pair;
-    // std::vector<airsim_img_request_vehicle_name_pair> airsim_img_request_vehicle_name_pair_vec_;
     std::vector<ImageRequest> airsim_img_request_vec_;
-    // std::vector<image_transport::Publisher> image_pub_vec_;
-    // std::vector<ros::Publisher> cam_info_pub_vec_;
-    // std::vector<sensor_msgs::CameraInfo> camera_info_msg_vec_;
-    // std::vector<ros::Publisher> lidar_pub_vec_;
-    // std::vector<ros::Publisher> imu_pub_vec_;
 
     /// ROS other publishers
     rclcpp::Publisher<rosgraph_msgs::msg::Clock>::SharedPtr clock_pub_;
