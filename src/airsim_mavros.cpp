@@ -40,7 +40,6 @@ AirsimMavros::AirsimMavros(const rclcpp::NodeOptions &options)
     , vehicle_frame_id_("base_link_frd")
     , enable_cameras_(false)
 {
-    std::cout << "airsimmavros start" << std::endl;
     ros_clock_.clock = rclcpp::Time(0);
 
     if (AirSimSettings::singleton().simmode_name != AirSimSettings::kSimModeTypeCar) {
@@ -59,7 +58,7 @@ AirsimMavros::AirsimMavros(const rclcpp::NodeOptions &options)
     parseAirsimSettings();
     initialize_ros();
 
-    std::cout << "AirsimMavros Initialized!\n" << std::endl;
+    RCLCPP_INFO(this->get_logger(), "AirsimMavros Initialized!\n");
 }
 
 bool AirsimMavros::parseAirsimSettings() {
@@ -74,7 +73,7 @@ bool AirsimMavros::parseAirsimSettings() {
         AirSimSettings::initializeSettings(settings_text_);
 
         AirSimSettings::singleton().load(std::bind(&AirsimMavros::getSimMode, this));
-        std::cout << "SimMode: " << AirSimSettings::singleton().simmode_name << std::endl;
+        RCLCPP_INFO(this->get_logger(), "SimMode: %s", AirSimSettings::singleton().simmode_name.c_str());
 
         return true;
     }
@@ -97,8 +96,7 @@ void AirsimMavros::initialize_airsim()
     }
     catch (rpc::rpc_error& e) {
         std::string msg = e.get_error().as<std::string>();
-        std::cout << "Exception raised by the API, something went wrong." << std::endl
-                  << msg << std::endl;
+        RCLCPP_ERROR(this->get_logger(), "Exception raised by the API, something went wrong. %s", msg.c_str());
     }
 }
 
@@ -487,9 +485,9 @@ void AirsimMavros::drone_state_timer_cb()
 
     catch (rpc::rpc_error& e)
     {
-        std::cout << "error" << std::endl;
+        RCLCPP_WARN(this->get_logger(), "error");
         std::string msg = e.get_error().as<std::string>();
-        std::cout << "Exception raised by the API:" << std::endl << msg << std::endl;
+        RCLCPP_WARN(this->get_logger(), "Exception raised by the API: %s", msg.c_str());
     }
 }
 
@@ -645,8 +643,7 @@ void AirsimMavros::img_response_timer_cb()
 
     catch (rpc::rpc_error& e) {
         std::string msg = e.get_error().as<std::string>();
-        std::cout << "Exception raised by the API, didn't get image response." << std::endl
-                  << msg << std::endl;
+        RCLCPP_WARN(this->get_logger(), "Exception raised by the API, didn't get image response.", msg.c_str());
     }
 }
 
@@ -670,7 +667,7 @@ void AirsimMavros::lidar_timer_cb()
     catch (rpc::rpc_error& e)
     {
         std::string msg = e.get_error().as<std::string>();
-        std::cout << "Exception raised by the API, didn't get image response." << std::endl << msg << std::endl;
+        RCLCPP_WARN(this->get_logger(), "Exception raised by the API, didn't get image response.", msg.c_str());
     }
 }
 
