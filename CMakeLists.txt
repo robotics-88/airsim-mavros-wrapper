@@ -114,29 +114,4 @@ install(FILES
 )
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
-
-
-ament_export_dependencies(rclcpp)
-ament_export_dependencies(nav_msgs)
-ament_export_dependencies(geographic_msgs)
-ament_export_dependencies(std_srvs)
-ament_export_dependencies(tf2_ros)
-ament_export_dependencies(tf2_sensor_msgs)
-ament_export_dependencies(rclpy)
-ament_export_dependencies(tf2)
-ament_export_dependencies(image_transport)
-ament_export_dependencies(geometry_msgs)
-ament_export_dependencies(cv_bridge)
-ament_export_dependencies(tf2_geometry_msgs)
-ament_export_dependencies(sensor_msgs)
-ament_export_dependencies(mavros_msgs)
-ament_export_dependencies(rosidl_default_generators)
-ament_export_dependencies(ament_cmake)
-ament_export_dependencies(std_msgs)
-ament_export_dependencies(rosidl_default_runtime)
-ament_export_dependencies(airsim_interfaces)
-
-ament_export_include_directories(${INCLUDE_DIRS})
-ament_export_libraries(airsim_mavros)
-
 ament_package()
