@@ -1,0 +1,31 @@
+<launch>
+	<!-- vim: set ft=xml noet : -->
+	<!-- example launch script for ArduPilot based FCU's -->
+
+	<arg name="do_slam" default="true"/>
+
+	<arg name="fcu_url" default="udp://127.0.0.1:14551@" />
+	<!-- <arg name="fcu_url" default="/dev/ttyACM0:57600" /> -->
+	<arg name="gcs_url" default="" />
+	<arg name="tgt_system" default="1" />
+	<arg name="tgt_component" default="1" />
+	<arg name="log_output" default="screen" />
+	<arg name="fcu_protocol" default="v2.0" />
+	<arg name="respawn_mavros" default="false" />
+	<arg name="namespace" default="mavros"/>
+
+	<let name="config_yaml" value="$(find-pkg-share airsim_launch)/launch/config/apm_default_config.yaml" if="$(var do_slam)"/>
+	<let name="config_yaml" value="$(find-pkg-share airsim_launch)/launch/config/apm_default_config.yaml" unless="$(var do_slam)"/>
+
+	<include file="$(find-pkg-share mavros)/launch/node.launch">
+		<arg name="pluginlists_yaml" value="$(find-pkg-share airsim_launch)/launch/config/pluginlists.yaml" />
+		<arg name="config_yaml" value="$(var config_yaml)"/>
+		<arg name="fcu_url" value="$(var fcu_url)" />
+		<arg name="gcs_url" value="$(var gcs_url)" />
+		<arg name="tgt_system" value="$(var tgt_system)" />
+		<arg name="tgt_component" value="$(var tgt_component)" />
+		<arg name="fcu_protocol" value="$(var fcu_protocol)" />
+		<arg name="respawn_mavros" value="$(var respawn_mavros)" />
+		<arg name="namespace" value="$(var namespace)"/>
+	</include>
+</launch>

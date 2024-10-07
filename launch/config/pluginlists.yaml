@@ -1,0 +1,23 @@
+
+/**:
+  ros__parameters:
+    plugin_denylist:
+      - '*'
+
+    plugin_allowlist:
+      - command
+      - geofence
+      - global_position
+      - gps_status
+      - home_position
+      - imu
+      - local_position
+      - obstacle_distance
+      - open_drone_id
+      - param
+      - setpoint_position
+      - setpoint_velocity
+      - sys_status
+      - sys_time
+      - vision_pose_estimate
+      - waypoint

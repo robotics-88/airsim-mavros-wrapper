@@ -27,32 +27,33 @@ STRICT_MODE_OFF //todo what does this do?
 #include <unordered_map>
 #include <memory>
 
-#include "ros/ros.h"
+#include "rclcpp/rclcpp.hpp"
 
 #include <cv_bridge/cv_bridge.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/TransformStamped.h>
-#include <geometry_msgs/Twist.h>
-#include <image_transport/image_transport.h>
-#include <mavros_msgs/State.h>
-#include <nav_msgs/Odometry.h>
 #include <opencv2/opencv.hpp>
-#include <ros/callback_queue.h>
-#include <ros/console.h>
-#include <sensor_msgs/CameraInfo.h>
-#include <sensor_msgs/distortion_models.h>
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/image_encodings.h>
-#include <sensor_msgs/Imu.h>
-#include <sensor_msgs/NavSatFix.h>
-#include <sensor_msgs/MagneticField.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/Range.h>
-#include <rosgraph_msgs/Clock.h>
-#include <std_srvs/Empty.h>
+
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <geometry_msgs/msg/twist.hpp>
+#include <image_transport/image_transport.hpp>
+#include <mavros_msgs/msg/state.hpp>
+#include <mavros_msgs/srv/stream_rate.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
+#include <sensor_msgs/distortion_models.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/image_encodings.hpp>
+#include <sensor_msgs/msg/imu.hpp>
+#include <sensor_msgs/msg/nav_sat_fix.hpp>
+#include <sensor_msgs/msg/magnetic_field.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <sensor_msgs/msg/range.hpp>
+#include <rosgraph_msgs/msg/clock.hpp>
+#include <std_srvs/srv/empty.hpp>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include "tf2_ros/buffer.h"
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
@@ -67,7 +68,15 @@ namespace airsim_ros {
  * @brief A class wrapper for AirSim with a MultiRotor and MAVROS control
  */
 
-class AirsimMavros
+template <typename T>
+struct SensorPublisher
+{
+    msr::airlib::SensorBase::SensorType sensor_type;
+    std::string sensor_name;
+    typename rclcpp::Publisher<T>::SharedPtr publisher;
+};
+
+class AirsimMavros : public rclcpp::Node
 {
     using AirSimSettings = msr::airlib::AirSimSettings;
     using SensorBase = msr::airlib::SensorBase;
@@ -85,26 +94,16 @@ public:
         DRONE,
         CAR
     };
-
-    AirsimMavros(const ros::NodeHandle& nh);
+    explicit AirsimMavros(const rclcpp::NodeOptions &options);
     ~AirsimMavros(){};
 
     void initialize_airsim();
     void initialize_ros();
 
-    // std::vector<ros::CallbackQueue> callback_queues_;
-    ros::AsyncSpinner img_async_spinner_;
-    ros::AsyncSpinner lidar_async_spinner_;
     bool is_used_lidar_timer_cb_queue_;
     bool is_used_img_timer_cb_queue_;
 
 private:
-    struct SensorPublisher
-    {
-        SensorBase::SensorType sensor_type;
-        std::string sensor_name;
-        ros::Publisher publisher;
-    };
 
     // utility struct for a SINGLE robot
     class VehicleROS
@@ -114,21 +113,24 @@ private:
         std::string vehicle_name;
 
         /// All things ROS
-        ros::Publisher odom_local_pub;
-        ros::Publisher global_gps_pub;
-        ros::Publisher env_pub;
-        ros::Publisher attitude_pub;
-        std::vector<SensorPublisher> sensor_pubs;
-        // handle lidar separately for max performance as data is collected on its own thread/callback
-        std::vector<SensorPublisher> lidar_pubs;
+        rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_local_pub;
+        rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr global_gps_pub;
 
-        nav_msgs::Odometry curr_odom;
-        geometry_msgs::QuaternionStamped curr_attitude;
-        sensor_msgs::NavSatFix gps_sensor_msg;
+        std::vector<SensorPublisher<sensor_msgs::msg::Imu>> imu_pubs;
+        std::vector<SensorPublisher<sensor_msgs::msg::NavSatFix>> gps_pubs;
+        std::vector<SensorPublisher<sensor_msgs::msg::MagneticField>> magnetometer_pubs;
+        std::vector<SensorPublisher<sensor_msgs::msg::Range>> distance_pubs;
+        std::vector<SensorPublisher<sensor_msgs::msg::PointCloud2>> lidar_pubs;
 
-        std::vector<geometry_msgs::TransformStamped> static_tf_msg_vec;
+        // handle lidar seperately for max performance as data is collected on its own thread/callback
 
-        ros::Time stamp;
+        nav_msgs::msg::Odometry curr_odom;
+        geometry_msgs::msg::QuaternionStamped curr_attitude;
+        sensor_msgs::msg::NavSatFix gps_sensor_msg;
+
+        std::vector<geometry_msgs::msg::TransformStamped> static_tf_msg_vec;
+
+        rclcpp::Time stamp;
 
         std::string odom_frame_id;
     };
@@ -136,13 +138,7 @@ private:
     class CarROS : public VehicleROS
     {
     public:
-        msr::airlib::CarApiBase::CarState curr_car_state;
-
-        ros::Subscriber car_cmd_sub;
-        ros::Publisher car_state_pub;
-
-        bool has_car_cmd;
-        msr::airlib::CarApiBase::CarControls car_cmd;
+        msr::airlib::CarApiBase::CarState curr_car_state_;
     };
 
     class MultiRotorROS : public VehicleROS
@@ -150,36 +146,30 @@ private:
     public:
         /// State
         msr::airlib::MultirotorState curr_drone_state;
-
-        ros::Subscriber vel_cmd_body_frame_sub;
-        ros::Subscriber vel_cmd_world_frame_sub;
-
-        ros::ServiceServer takeoff_srvr;
-        ros::ServiceServer land_srvr;
     };
 
     bool parseAirsimSettings();
     std::string getSimMode();
 
     /// ROS timer callbacks
-    void img_response_timer_cb(const ros::TimerEvent& event); // update images from airsim_client_ every nth sec
-    void drone_imu_timer_cb(const ros::TimerEvent& event);
-    void drone_state_timer_cb(const ros::TimerEvent& event); // update drone state from airsim_client_ every nth sec
-    void lidar_timer_cb(const ros::TimerEvent& event);
+    void img_response_timer_cb(); // update images from airsim_client_ every nth sec
+    void drone_imu_timer_cb();
+    void drone_state_timer_cb(); // update drone state from airsim_client_ every nth sec
+    void lidar_timer_cb();
 
     // state, returns the simulation timestamp best guess based on drone state timestamp, airsim needs to return timestap for environment
     void update_and_publish_static_transforms(VehicleROS* vehicle_ros);
     void publish_vehicle_state();
 
     /// ROS tf broadcasters
-    void publish_odom_tf(const nav_msgs::Odometry& odom_ned_msg);
+    void publish_odom_tf(const nav_msgs::msg::Odometry& odom_ned_msg);
 
     /// camera helper methods
-    sensor_msgs::CameraInfo generate_cam_info(const std::string& camera_name, const CameraSetting& camera_setting, const CaptureSetting& capture_setting) const;
+    sensor_msgs::msg::CameraInfo generate_cam_info(const std::string& camera_name, const CameraSetting& camera_setting, const CaptureSetting& capture_setting) const;
     cv::Mat manual_decode_depth(const ImageResponse& img_response) const;
 
-    sensor_msgs::ImagePtr get_img_msg_from_response(const ImageResponse& img_response, const ros::Time curr_ros_time, const std::string frame_id);
-    sensor_msgs::ImagePtr get_depth_img_msg_from_response(const ImageResponse& img_response, const ros::Time curr_ros_time, const std::string frame_id);
+    std::shared_ptr<sensor_msgs::msg::Image> get_img_msg_from_response(const ImageResponse& img_response, const rclcpp::Time curr_ros_time, const std::string frame_id);
+    std::shared_ptr<sensor_msgs::msg::Image> get_depth_img_msg_from_response(const ImageResponse& img_response, const rclcpp::Time curr_ros_time, const std::string frame_id);
 
     void process_and_publish_img_response(const std::vector<ImageResponse>& img_response_vec, const int img_response_idx, const std::string& vehicle_name);
 
@@ -191,28 +181,33 @@ private:
     void set_nans_to_zeros_in_pose(const VehicleSetting& vehicle_setting, CameraSetting& camera_setting) const;
 
     /// utils. todo parse into an Airlib<->ROS conversion class
-    nav_msgs::Odometry get_odom_msg_from_multirotor_state(const msr::airlib::MultirotorState& drone_state);
-    geometry_msgs::QuaternionStamped get_attitude_from_airsim_state(const msr::airlib::MultirotorState& drone_state);
-    sensor_msgs::NavSatFix get_gps_sensor_msg_from_airsim_geo_point(const msr::airlib::GeoPoint& geo_point) const;
-    sensor_msgs::PointCloud2 get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data) const;
-    sensor_msgs::MagneticField get_mag_msg_from_airsim(const msr::airlib::MagnetometerBase::Output& mag_data);
-    sensor_msgs::Imu get_imu_msg_from_airsim(const msr::airlib::ImuBase::Output& imu_data);
+    nav_msgs::msg::Odometry get_odom_msg_from_multirotor_state(const msr::airlib::MultirotorState& drone_state);
+    geometry_msgs::msg::QuaternionStamped get_attitude_from_airsim_state(const msr::airlib::MultirotorState& drone_state);
+    sensor_msgs::msg::NavSatFix get_gps_sensor_msg_from_airsim_geo_point(const msr::airlib::GeoPoint& geo_point) const;
+    sensor_msgs::msg::PointCloud2 get_lidar_msg_from_airsim(const msr::airlib::LidarData& lidar_data) const;
+    sensor_msgs::msg::MagneticField get_mag_msg_from_airsim(const msr::airlib::MagnetometerBase::Output& mag_data);
+    sensor_msgs::msg::Imu get_imu_msg_from_airsim(const msr::airlib::ImuBase::Output& imu_data);
 
     // simulation time utility
-    ros::Time airsim_timestamp_to_ros(const msr::airlib::TTimePoint& stamp) const;
-    ros::Time chrono_timestamp_to_ros(const std::chrono::system_clock::time_point& stamp) const;
-    ros::Time make_ts(uint64_t unreal_ts);
+    // rclcpp::Time airsim_timestamp_to_ros(const msr::airlib::TTimePoint& stamp) const;
+    // rclcpp::Time chrono_timestamp_to_ros(const std::chrono::system_clock::time_point& stamp) const;
+    // rclcpp::Time make_ts(uint64_t unreal_ts);
     
-    ros::Time first_imu_ros_ts;
+    rclcpp::Time first_imu_ros_ts;
     int64_t first_imu_unreal_ts = -1;
 
     // Utility methods to convert airsim_client_
     msr::airlib::MultirotorRpcLibClient* get_multirotor_client();
     msr::airlib::CarRpcLibClient* get_car_client();
 
+    template <typename T>
+    const SensorPublisher<T> create_sensor_publisher(const std::string& sensor_type_name, const std::string& sensor_name,
+                                                     SensorBase::SensorType sensor_type, const std::string& topic_name, int QoS);
+
 private:
-    ros::NodeHandle nh_;
-    ros::NodeHandle nh_private_;
+    std::shared_ptr<rclcpp::Node> nh_img_;
+    std::shared_ptr<rclcpp::Node> nh_lidar_;
+    image_transport::ImageTransport image_transport_;
 
     std::string host_ip_;
 
@@ -221,24 +216,17 @@ private:
     AIRSIM_MODE airsim_mode_ = AIRSIM_MODE::DRONE;
 
     std::unordered_map<std::string, std::unique_ptr<VehicleROS>> vehicle_name_ptr_map_;
-    std::unique_ptr<VehicleROS> vehicle_ros_;
+    std::unique_ptr<MultiRotorROS> vehicle_ros_;
     static const std::unordered_map<int, std::string> image_type_int_to_string_map_;
-    std::map<std::string, std::string> vehicle_imu_map_;
-    std::map<std::string, std::string> vehicle_lidar_map_;
 
     bool is_vulkan_ = false; // rosparam obtained from launch file. If vulkan is being used, we BGR encoding instead of RGB
 
-    std::unique_ptr<msr::airlib::RpcLibClientBase> airsim_client_ = nullptr;
+    std::unique_ptr<msr::airlib::RpcLibClientBase> airsim_client_;
     // seperate busy connections to airsim, update in their own thread
     msr::airlib::RpcLibClientBase airsim_client_images_;
     msr::airlib::RpcLibClientBase airsim_client_lidar_;
 
-    // todo not sure if async spinners shuold be inside this class, or should be instantiated in airsim_node.cpp, and cb queues should be public
-    // todo for multiple drones with multiple sensors, this won't scale. make it a part of VehicleROS?
-    ros::CallbackQueue img_timer_cb_queue_;
-    ros::CallbackQueue lidar_timer_cb_queue_;
-
-    std::recursive_mutex drone_control_mutex_;
+    std::mutex drone_control_mutex_;
 
     // gimbal control
     bool has_gimbal_cmd_;
@@ -251,35 +239,39 @@ private:
     const std::string AIRSIM_FRAME_ID = "world_ned";
     const std::string AIRSIM_ODOM_FRAME_ID = "odom_local_ned";
     const std::string ENU_ODOM_FRAME_ID = "odom_local_enu";
-    tf2_ros::TransformBroadcaster tf_broadcaster_;
-    tf2_ros::StaticTransformBroadcaster static_tf_pub_;
+    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+    std::shared_ptr<tf2_ros::StaticTransformBroadcaster> static_tf_pub_;
 
     bool isENU_ = false;
-    tf2_ros::Buffer tf_buffer_;
-    tf2_ros::TransformListener tf_listener_;
+    std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 
     /// ROS params
     bool enable_cameras_;
 
     /// ROS Timers.
-    ros::Timer airsim_img_response_timer_;
-    ros::Timer airsim_control_update_timer_;
-    ros::Timer airsim_imu_update_timer_;
-    ros::Timer airsim_lidar_update_timer_;
-    ros::ServiceClient mavros_client_;
+    rclcpp::TimerBase::SharedPtr airsim_img_response_timer_;
+    rclcpp::TimerBase::SharedPtr airsim_control_update_timer_;
+    rclcpp::TimerBase::SharedPtr airsim_lidar_update_timer_;
+    rclcpp::TimerBase::SharedPtr airsim_imu_update_timer_;
+    rclcpp::Client<mavros_msgs::srv::StreamRate>::SharedPtr mavros_client_;
+
+    /// Callback groups
+    std::vector<rclcpp::CallbackGroup::SharedPtr> airsim_img_callback_groups_;
+    rclcpp::CallbackGroup::SharedPtr airsim_control_callback_group_;
+    std::vector<rclcpp::CallbackGroup::SharedPtr> airsim_lidar_callback_groups_;
 
     typedef std::pair<std::vector<ImageRequest>, std::string> airsim_img_request_vehicle_name_pair;
     std::vector<airsim_img_request_vehicle_name_pair> airsim_img_request_vehicle_name_pair_vec_;
-    std::vector<ImageRequest> airsim_img_request_vec_;
     std::vector<image_transport::Publisher> image_pub_vec_;
-    std::vector<ros::Publisher> cam_info_pub_vec_;
-    std::vector<sensor_msgs::CameraInfo> camera_info_msg_vec_;
-    std::vector<ros::Publisher> lidar_pub_vec_;
-    std::vector<ros::Publisher> imu_pub_vec_;
+    std::vector<rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr> cam_info_pub_vec_;
+    std::vector<sensor_msgs::msg::CameraInfo> camera_info_msg_vec_;
+
+    std::vector<ImageRequest> airsim_img_request_vec_;
 
     /// ROS other publishers
-    ros::Publisher clock_pub_;
-    rosgraph_msgs::Clock ros_clock_;
+    rclcpp::Publisher<rosgraph_msgs::msg::Clock>::SharedPtr clock_pub_;
+    rosgraph_msgs::msg::Clock ros_clock_;
     bool publish_clock_ = false;
 
 };

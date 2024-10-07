@@ -1,0 +1,38 @@
+<launch>
+
+    <arg name="do_slam" default="true"/>
+    <arg name="vehicle_name" default="MyVehicle"/>
+    <arg name="vehicle_frame" default="base_link"/>
+    <arg name="odom_frame" default="odom"/>
+    <arg name="map_frame" default="map"/>
+    <arg name="world_frame" default="world"/>
+    <arg name="image_pub_freq" default=".05"/>
+    <arg name="lidar_pub_freq" default=".1"/>
+    <arg name="control_pub_freq" default=".1"/>
+    <arg name="update_imu_n_sec" default=".1"/>
+    <arg name="enable_cameras" default="false"/>
+    <let name="raw_lidar_topic" value="/airsim_ros_node/$(var vehicle_name)/lidar/Lidar2"/>
+
+    <node pkg="airsim_launch" exec="airsim_node" respawn="false" name="airsim_ros_node" output="screen">
+        <param name="update_airsim_img_response_every_n_sec" value="$(var image_pub_freq)" />
+        <param name="update_lidar_every_n_sec" value="$(var lidar_pub_freq)" />
+        <param name="update_airsim_control_every_n_sec" value="$(var control_pub_freq)" />
+        <param name="update_imu_n_sec" value="$(var update_imu_n_sec)" />
+        <param name="vehicle_frame_id" value="$(var vehicle_frame)" />
+        <param name="odom_frame_id" value="$(var odom_frame)" />
+        <param name="map_frame_id" value="$(var map_frame)" />
+        <param name="world_frame_id" value="$(var world_frame)" />
+        <param name="enable_cameras" value="$(var enable_cameras)" />
+    </node>
+
+    <group if="$(var do_slam)">
+        <include file="$(find-pkg-share rs_to_velodyne)/launch/rs_to_velodyne.launch">
+            <arg name="raw_lidar_topic" value="$(var raw_lidar_topic)"/>
+            <arg name="input_cloud_type" value="XYZI"/>
+            <arg name="output_cloud_type" value="XYZIR"/>
+        </include>
+
+        <node pkg="tf2_ros" exec="static_transform_publisher" name="velodyne_pub" args="0 0 0 0 0 0 base_link/Lidar2 velodyne"/>
+    </group>
+
+</launch>
