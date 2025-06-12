@@ -4,7 +4,9 @@ This is an alternative AirSim/Unreal wrapper based off the [Microsoft version](h
 
 ## Dependencies- Unreal/AirSim
 
-This wrapper requires Unreal and AirSim to be installed first, and has been tested on Ubuntu 20.04 with ROS Noetic. AirSim provides good [instructions](https://microsoft.github.io/AirSim/build_linux/) for setting up both Unreal and AirSim on Linux.
+This wrapper requires Unreal and AirSim to be installed first, and has been tested on Ubuntu 22.04 with ROS Humble. AirSim provides good [instructions](https://microsoft.github.io/AirSim/build_linux/) for setting up both Unreal and AirSim on Linux.
+
+TODO: Update the instructions below which are very out of date.
 
 ## Setup and build
 
